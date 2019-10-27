@@ -24,6 +24,9 @@ class LightSource
 public:
 	glm::vec3 Position;
 	glm::vec3 Color;
+	glm::vec3 Ambient;
+	glm::vec3 Diffuse;
+	glm::vec3 Specular;
 	GLfloat Size = 10.0f;
 	GLuint VAO = 0;
 
@@ -39,6 +42,27 @@ public:
 		else {
 			this->VAO = createVAO();
 		}
+		this->Ambient = this->Color;
+		this->Diffuse = this->Color;
+		this->Specular = this->Color;
+	}
+
+	LightSource(glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat size, GLuint VAO)
+	{
+		this->Position = position;
+		this->Size = size;
+		//The VAO has to be created once but can be used again for other similar light sources
+		if (VAO != 0) {
+			this->VAO = VAO;
+		}
+		else {
+			this->VAO = createVAO();
+		}
+		this->Ambient = ambient;
+		this->Diffuse = diffuse;
+		this->Specular = specular;
+		this->Color = ambient;
+
 	}
 
 
