@@ -21,7 +21,7 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>15.0</VCProjectVersion>
     <ProjectGuid>{41AA2203-DA8D-458F-8ED9-2DD42F3D35BC}</ProjectGuid>
-    <RootNamespace>Glitter2017</RootNamespace>
+    <RootNamespace>StargateProject</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.18362.0</WindowsTargetPlatformVersion>
     <ProjectName>StargateProject</ProjectName>
   </PropertyGroup>
