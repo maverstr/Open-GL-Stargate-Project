@@ -201,7 +201,6 @@ private:
 unsigned int TextureFromFile(const char* path, const string& directory, bool gamma)
 {
 	string filename = string(path);
-	cout << path << endl;
 	filename = directory + '/' + filename;
 
 	unsigned int textureID;
@@ -211,7 +210,7 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 	unsigned char* data = stbi_load(filename.c_str(), &width, &height, &nrComponents, 0);
 	if (data)
 	{
-		GLenum format;
+		GLenum format{};
 		if (nrComponents == 1)
 			format = GL_RED;
 		else if (nrComponents == 3)
@@ -229,10 +228,11 @@ unsigned int TextureFromFile(const char* path, const string& directory, bool gam
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
 		stbi_image_free(data);
+		cout << "Texture loaded at path: " << filename << std::endl;
 	}
 	else
 	{
-		std::cout << "Texture failed to load at path: " << path << std::endl;
+		std::cout << "Texture failed to load at path: " << filename << std::endl;
 		stbi_image_free(data);
 	}
 
