@@ -33,6 +33,9 @@
     <ClInclude Include="..\..\vendors\includes\glad\glad.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Sources\LightSource.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Sources\Shader.cpp">
@@ -52,18 +55,6 @@
     <None Include="Shaders\axis.vert">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Shaders\light.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\light.vert">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\model.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\model.vert">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="Shaders\skybox.frag">
       <Filter>Resource Files</Filter>
     </None>
@@ -80,6 +71,18 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Shaders\stars.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\lightSource.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\lightSource.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\model.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\model.vert">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

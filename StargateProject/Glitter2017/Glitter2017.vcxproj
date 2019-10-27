@@ -124,6 +124,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\Sources\Camera.hpp" />
     <ClInclude Include="..\..\Sources\glitter.hpp" />
+    <ClInclude Include="..\..\Sources\LightSource.h" />
     <ClInclude Include="..\..\Sources\Mesh.hpp" />
     <ClInclude Include="..\..\Sources\Model.hpp" />
     <ClInclude Include="..\..\Sources\Shader.hpp" />
@@ -137,8 +138,8 @@
   <ItemGroup>
     <None Include="Shaders\axis.frag" />
     <None Include="Shaders\axis.vert" />
-    <None Include="Shaders\light.frag" />
-    <None Include="Shaders\light.vert" />
+    <None Include="Shaders\lightSource.frag" />
+    <None Include="Shaders\lightSource.vert" />
     <None Include="Shaders\model.frag" />
     <None Include="Shaders\model.vert" />
     <None Include="Shaders\skybox.frag" />
