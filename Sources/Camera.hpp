@@ -21,7 +21,7 @@ enum Camera_Movement {
 // Default camera values
 const GLfloat YAW        =  0.0f;
 const GLfloat PITCH      =  0.0f;
-const GLfloat SPEED      =  10.0f;
+const GLfloat SPEED      =  12.0f;
 const GLfloat SENSITIVTY =  0.25f;
 const GLfloat FOV       =  75.0f;
 

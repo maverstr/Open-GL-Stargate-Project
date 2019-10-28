@@ -28,25 +28,32 @@ enum lightType {
 class LightSource
 {
 public:
+	lightType type;
 	glm::vec4 Position;
 	glm::vec3 Color;
 	glm::vec3 Ambient;
 	glm::vec3 Diffuse;
 	glm::vec3 Specular;
-	GLfloat AttenuationBool; //workaround as it has to be int in the shaders
+	int AttenuationBool; //workaround as it has to be int in the shaders
 	GLfloat AttenuationConstant;
 	GLfloat AttenuationLinear;
 	GLfloat AttenuationQuadratic;
+	int SpotlightBool;
+	glm::vec3 Direction;
+	GLfloat InnerCutOff;
+	GLfloat OuterCutOff;
 	GLfloat Size = 10.0f;
 	GLuint VAO = 0;
 
 	//Only specifies color, WITH ATTENUATION
-	LightSource(lightType type, glm::vec3 position, glm::vec3 color, GLfloat constant, GLfloat linear, GLfloat quadratic, GLfloat size, GLuint VAO)
+	LightSource(int* lightCounter, lightType type, glm::vec3 position, glm::vec3 color, GLfloat constant, GLfloat linear, GLfloat quadratic, GLfloat size, GLuint VAO)
 	{
-		if (type == POINTLIGHT)
+		if (type == POINTLIGHT) {
 			this->Position = glm::vec4(position, 1.0f);
-		else if (type == DIRECTIONALLIGHT)
+		}
+		else if (type == DIRECTIONALLIGHT) {
 			this->Position = glm::vec4(position, 0.0f);
+		}
 		this->Color = color;
 		this->Size = size;
 		//The VAO has to be created once but can be used again for other similar light sources
@@ -60,14 +67,18 @@ public:
 		this->Diffuse = this->Color;
 		this->Specular = this->Color;
 
-		this->AttenuationBool = 1.0f;
+		this->AttenuationBool = 1;
 		this->AttenuationConstant = constant;
 		this->AttenuationLinear = linear;
 		this->AttenuationQuadratic = quadratic;
+		this->SpotlightBool = 0;
+
+		this->type = type;
+		(*lightCounter)++;
 	}
 
 	//Only specifies color, WITHOUT ATTENUATION
-	LightSource(lightType type, glm::vec3 position, glm::vec3 color, GLfloat size, GLuint VAO)
+	LightSource(int* lightCounter, lightType type, glm::vec3 position, glm::vec3 color, GLfloat size, GLuint VAO)
 	{
 		if (type == POINTLIGHT)
 			this->Position = glm::vec4(position, 1.0f);
@@ -86,14 +97,18 @@ public:
 		this->Diffuse = this->Color;
 		this->Specular = this->Color;
 
-		this->AttenuationBool = 0.0f;
+		this->AttenuationBool = 0;
 		this->AttenuationConstant = 0.0f;
 		this->AttenuationLinear = 0.0f;
 		this->AttenuationQuadratic = 0.0f;
+		this->SpotlightBool = 0;
+
+		this->type = type;
+		(*lightCounter)++;
 	}
 
 	//Specifies ambient diffuse and specular components, WITH ATTENUATION
-	LightSource(lightType type, glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic, GLfloat size, GLuint VAO)
+	LightSource(int* lightCounter, lightType type, glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic, GLfloat size, GLuint VAO)
 	{
 		if (type == POINTLIGHT)
 			this->Position = glm::vec4(position, 1.0f);
@@ -112,14 +127,18 @@ public:
 		this->Specular = specular;
 		this->Color = ambient;
 
-		this->AttenuationBool = 1.0f;
+		this->AttenuationBool = 1;
 		this->AttenuationConstant = constant;
 		this->AttenuationLinear = linear;
 		this->AttenuationQuadratic = quadratic;
+		this->SpotlightBool = 0;
+
+		this->type = type;
+		(*lightCounter)++;
 	}
 
 	//Specifies ambient diffuse and specular components, WITHTOUT ATTENUATION
-	LightSource(lightType type, glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat size, GLuint VAO)
+	LightSource(int* lightCounter, lightType type, glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat size, GLuint VAO)
 	{
 		if (type == POINTLIGHT)
 			this->Position = glm::vec4(position, 1.0f);
@@ -138,19 +157,30 @@ public:
 		this->Specular = specular;
 		this->Color = ambient;
 
-		this->AttenuationBool = 0.0f;
+		this->AttenuationBool = 0;
 		this->AttenuationConstant = 0.0f;
 		this->AttenuationLinear = 0.0f;
 		this->AttenuationQuadratic = 0.0f;
+		this->SpotlightBool = 0;
+
+		this->type = type;
+		(*lightCounter)++;
 	}
-	/*
+	
 	//Specifies ambient diffuse and specular components, WITH ATTENUATION, CASE OF SPOTLIGHT
-	LightSource(lightType type, glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic, GLfloat size, GLuint VAO)
+	LightSource(int* lightCounter, lightType type, glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, GLfloat constant, GLfloat linear, GLfloat quadratic, glm::vec3 direction, GLfloat innerCutOff, GLfloat outerCutOff, GLfloat size, GLuint VAO)
 	{
 		if (type == POINTLIGHT)
 			this->Position = glm::vec4(position, 1.0f);
 		else if (type == DIRECTIONALLIGHT)
 			this->Position = glm::vec4(position, 0.0f);
+		else if (type == SPOTLIGHT) {
+			this->Position = glm::vec4(position, 1.0f);
+			this->Direction = direction;
+			this->InnerCutOff = glm::cos(glm::radians(innerCutOff)); //let's calculate directly the cosine
+			this->OuterCutOff = glm::cos(glm::radians(outerCutOff));
+			this->SpotlightBool = 1;
+		}
 		this->Size = size;
 		//The VAO has to be created once but can be used again for other similar light sources
 		if (VAO != 0) {
@@ -164,12 +194,122 @@ public:
 		this->Specular = specular;
 		this->Color = ambient;
 
-		this->AttenuationBool = true;
+		this->AttenuationBool = 1;
 		this->AttenuationConstant = constant;
 		this->AttenuationLinear = linear;
 		this->AttenuationQuadratic = quadratic;
+
+		this->type = type;
+		(*lightCounter)++;
 	}
-	*/
+	
+	//Specifies ambient diffuse and specular components, WITHOUT ATTENUATION, CASE OF SPOTLIGHT
+	LightSource(int* lightCounter, lightType type, glm::vec3 position, glm::vec3 ambient, glm::vec3 diffuse, glm::vec3 specular, glm::vec3 direction, GLfloat innerCutOff, GLfloat outerCutOff, GLfloat size, GLuint VAO)
+	{
+		if (type == POINTLIGHT)
+			this->Position = glm::vec4(position, 1.0f);
+		else if (type == DIRECTIONALLIGHT)
+			this->Position = glm::vec4(position, 0.0f);
+		else if (type == SPOTLIGHT) {
+			this->Position = glm::vec4(position, 1.0f);
+			this->Direction = direction;
+			this->InnerCutOff = glm::cos(glm::radians(innerCutOff)); //let's calculate directly the cosine
+			this->OuterCutOff = glm::cos(glm::radians(outerCutOff));
+			this->SpotlightBool = 1;
+		}
+		this->Size = size;
+		//The VAO has to be created once but can be used again for other similar light sources
+		if (VAO != 0) {
+			this->VAO = VAO;
+		}
+		else {
+			this->VAO = createVAO();
+		}
+		this->Ambient = ambient;
+		this->Diffuse = diffuse;
+		this->Specular = specular;
+		this->Color = ambient;
+
+		this->AttenuationBool = 0;
+		this->AttenuationConstant = 0.0f;
+		this->AttenuationLinear = 0.0f;
+		this->AttenuationQuadratic = 0.0f;
+
+		this->type = type;
+		(*lightCounter)++;
+	}
+
+	//Specifies color only, WITH ATTENUATION, CASE OF SPOTLIGHT
+	LightSource(int* lightCounter, lightType type, glm::vec3 position, glm::vec3 color, GLfloat constant, GLfloat linear, GLfloat quadratic, glm::vec3 direction, GLfloat innerCutOff, GLfloat outerCutOff, GLfloat size, GLuint VAO)
+	{
+		if (type == POINTLIGHT)
+			this->Position = glm::vec4(position, 1.0f);
+		else if (type == DIRECTIONALLIGHT)
+			this->Position = glm::vec4(position, 0.0f);
+		else if (type == SPOTLIGHT) {
+			this->Position = glm::vec4(position, 1.0f);
+			this->Direction = direction;
+			this->InnerCutOff = glm::cos(glm::radians(innerCutOff)); //let's calculate directly the cosine
+			this->OuterCutOff = glm::cos(glm::radians(outerCutOff));
+			this->SpotlightBool = 1;
+		}
+		this->Size = size;
+		//The VAO has to be created once but can be used again for other similar light sources
+		if (VAO != 0) {
+			this->VAO = VAO;
+		}
+		else {
+			this->VAO = createVAO();
+		}
+		this->Ambient = color;
+		this->Diffuse = color;
+		this->Specular = color;
+		this->Color = color;
+
+		this->AttenuationBool = 1;
+		this->AttenuationConstant = constant;
+		this->AttenuationLinear = linear;
+		this->AttenuationQuadratic = quadratic;
+
+		this->type = type;
+		(*lightCounter)++;
+	}
+
+	//Specifies color only, WITHOUT ATTENUATION, CASE OF SPOTLIGHT
+	LightSource(int* lightCounter, lightType type, glm::vec3 position, glm::vec3 color, glm::vec3 direction, GLfloat innerCutOff, GLfloat outerCutOff, GLfloat size, GLuint VAO)
+	{
+		if (type == POINTLIGHT)
+			this->Position = glm::vec4(position, 1.0f);
+		else if (type == DIRECTIONALLIGHT)
+			this->Position = glm::vec4(position, 0.0f);
+		else if (type == SPOTLIGHT) {
+			this->Position = glm::vec4(position, 1.0f);
+			this->Direction = direction;
+			this->InnerCutOff = glm::cos(glm::radians(innerCutOff)); //let's calculate directly the cosine
+			this->OuterCutOff = glm::cos(glm::radians(outerCutOff));
+			this->SpotlightBool = 1;
+		}
+		this->Size = size;
+		//The VAO has to be created once but can be used again for other similar light sources
+		if (VAO != 0) {
+			this->VAO = VAO;
+		}
+		else {
+			this->VAO = createVAO();
+		}
+		this->Ambient = color;
+		this->Diffuse = color;
+		this->Specular = color;
+		this->Color = color;
+
+		this->AttenuationBool = 0;
+		this->AttenuationConstant = 0.0f;
+		this->AttenuationLinear = 0.0f;
+		this->AttenuationQuadratic = 0.0f;
+
+		this->type = type;
+		(*lightCounter)++;
+	}
 
 	void draw(Shader shader, glm::mat4 modelMatrix, glm::mat4 viewMatrix, glm::mat4 projectionMatrix) {
 		shader.use();
@@ -188,13 +328,36 @@ public:
 		this->Position.x = pos.x;
 		this->Position.y = pos.y;
 		this->Position.z = pos.z;
+	}
 
+	void updateFlashLightDirection(glm::vec3 pos) {
+		this->Direction = pos;
+	}
+
+	//Need to make sure the shader is "use()" before !!!!! and does not set textures !!!
+	void setModelShaderLightParameters(Shader shader, int lightNumber) {
+		string number = to_string(lightNumber);
+
+		shader.setVector3f(("light[" + number + "].ambient").c_str(), this->Ambient);
+		shader.setVector3f(("light[" + number + "].diffuse").c_str(), this->Diffuse);
+		shader.setVector3f(("light[" + number + "].specular").c_str(), this->Specular);
+		shader.setVector4f(("light[" + number + "].position").c_str(), this->Position);
+		shader.setInteger(("light[" + number + "].spotlight").c_str(), this->SpotlightBool);
+		shader.setFloat(("light[" + number + "].innerCutOff").c_str(), this->InnerCutOff);
+		shader.setFloat(("light[" + number + "].outerCutOff").c_str(), this->OuterCutOff);
+		shader.setVector3f(("light[" + number + "].direction").c_str(), this->Direction);
+		shader.setInteger(("light[" + number + "].attenuationBool").c_str(), this->AttenuationBool);
+		shader.setFloat(("light[" + number + "].constant").c_str(), this->AttenuationConstant);
+		shader.setFloat(("light[" + number + "].linear").c_str(), this->AttenuationLinear);
+		shader.setFloat(("light[" + number + "].quadratic").c_str(), this->AttenuationQuadratic);		
 	}
 
 	//This function can be called to retrieve the VAO for other smilar light sources
 	GLuint getVAO() {
 		return this->VAO;
 	}
+
+
 
 private:
 	GLuint createVAO(void) {
