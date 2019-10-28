@@ -1,4 +1,5 @@
-- Automatic stars procedural generation with python script, reading of the file in the c++ code and drawing of the stars with variable size far away in the sky
+- Automatic stars procedural generation with python script, reading of the file in the c++ code and drawing of the stars with variable size far away in the sky. 
+The drawing is done using instances to increase performance !!!
 - cubemap/skybox in space
 - Phong's light algorithm (ambient, diffuse, specular)
 - light attenuation with distance
