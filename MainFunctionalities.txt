@@ -1,7 +1,7 @@
 - Automatic stars procedural generation with python script, reading of the file in the c++ code and drawing of the stars with variable size far away in the sky. 
 The drawing is done using instances to increase performance !!!
 - cubemap/skybox in space
-- Phong's light algorithm (ambient, diffuse, specular)
+- Blinn-Phong's light algorithm (ambient, diffuse, specular)
 - light attenuation with distance
 - 3 different types of lightsources (point light, directional, spotlight/flashlight) with their own class
 - use of emission maps for other light sources on the object itself (as well as diffuse and specular maps)

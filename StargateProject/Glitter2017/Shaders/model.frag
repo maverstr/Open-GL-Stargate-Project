@@ -90,8 +90,8 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
     
 
 	// specular
-	vec3 reflectDir = reflect(-lightDir, norm);  
-	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess); 
+	vec3 halfwayDir = normalize(lightDir + viewDir); //used for Blinn-Phong's shading algorithm to overcome issues with high shininess
+	float spec = pow(max(dot(norm, halfwayDir), 0.0), material.shininess); 
 	vec3 specular = light.specular * spec * mix(vec3(texture(material.texture_specular1, TexCoords)), material.specular, material.mixRatio);
         
 
