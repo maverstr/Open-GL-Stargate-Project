@@ -34,21 +34,30 @@ struct Texture {
 	string path;
 };
 
+struct Material {
+	glm::vec3 Diffuse;
+	glm::vec3 Specular;
+	glm::vec3 Ambient;
+	float Shininess;
+};
+
 class Mesh {
 public:
 	/*  Mesh Data  */
 	vector<Vertex> vertices;
 	vector<unsigned int> indices;
 	vector<Texture> textures;
+	Material material;
 	unsigned int VAO;
 
 	/*  Functions  */
 	// constructor
-	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures)
+	Mesh(vector<Vertex> vertices, vector<unsigned int> indices, vector<Texture> textures, Material material)
 	{
 		this->vertices = vertices;
 		this->indices = indices;
 		this->textures = textures;
+		this->material = material;
 
 		// now that we have all the required data, set the vertex buffers and its attribute pointers.
 		setupMesh();
@@ -83,6 +92,17 @@ public:
 			glBindTexture(GL_TEXTURE_2D, textures[i].id);
 		}
 
+		//sets material properties to shader
+		shader.setVector3f("material.ambient", this->material.Ambient);
+		shader.setVector3f("material.diffuse", this->material.Diffuse);
+		shader.setVector3f("material.specular", this->material.Specular);
+		shader.setFloat("material.shininess", this->material.Shininess);
+		if (textures.size() == 0) {//if there are no textures then the whole object is defined as the material properties, hence 1 of mix ratio
+			shader.setFloat("material.mixRatio", 1.0);
+		}
+		else {//if there are texture maps, base color is less important
+			shader.setFloat("material.mixRatio", 0.1);
+		}
 		// draw mesh
 		glBindVertexArray(VAO);
 		glDrawElements(GL_TRIANGLES, indices.size(), GL_UNSIGNED_INT, 0);

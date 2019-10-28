@@ -2,10 +2,16 @@
 out vec4 FragColor;
 
 struct Material {
-    sampler2D diffuse;
-    sampler2D specular;
-	sampler2D emission;
-    float     shininess;
+    sampler2D texture_diffuse1; //mat properties as texture maps
+    sampler2D texture_specular1;
+	sampler2D texture_normal1;
+	sampler2D texture_height1;
+	sampler2D emissionMap;
+	float shininess;
+	vec3 ambient; //material properties
+	vec3 diffuse;
+	vec3 specular;
+	float mixRatio; //use of texture combiner to render them all
 };
 
 struct Light {
@@ -32,8 +38,6 @@ struct Light {
 in vec3 Normal;  
 in vec3 FragPos;  
 in vec2 TexCoords;
-
-uniform sampler2D texture_diffuse1;
 
 uniform vec3 objectColor;
 uniform vec3 viewPos;
@@ -70,7 +74,7 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 	//////////////////////////////PHONGS SHADING////////////////////////////////
 
 	// ambient
-	vec3 ambient = light.ambient * vec3(texture(material.diffuse, TexCoords));
+	vec3 ambient = light.ambient * mix(vec3(texture(material.texture_diffuse1, TexCoords)), material.diffuse, material.mixRatio);
 
 	// diffuse 
 	vec3 lightDir = vec3(0.0f,0.0f,0.0f); //default value
@@ -82,15 +86,14 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 		lightDir = normalize(-light.position.xyz);
 	}
 	float diff = max(dot(norm, lightDir), 0.0);
-	vec3 diffuse = light.diffuse * diff * vec3(texture(material.diffuse, TexCoords));
+	vec3 diffuse = light.diffuse * diff * mix(vec3(texture(material.texture_diffuse1, TexCoords)),material.diffuse, material.mixRatio);
     
 
 	// specular
 	vec3 reflectDir = reflect(-lightDir, norm);  
 	float spec = pow(max(dot(viewDir, reflectDir), 0.0), material.shininess); 
-	vec3 specular = light.specular * spec * vec3(texture(material.specular, TexCoords));
+	vec3 specular = light.specular * spec * mix(vec3(texture(material.texture_specular1, TexCoords)), material.specular, material.mixRatio);
         
-
 
 	//case of a spotlight
 	if(light.spotlight == 1){ 
@@ -108,6 +111,6 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 
 vec3 calcEmission(void){
 	// emission
-	vec3 emission = texture(material.emission, TexCoords).rgb;
+	vec3 emission = texture(material.emissionMap, TexCoords).rgb;
 	return emission;
 }

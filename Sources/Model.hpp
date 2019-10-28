@@ -159,8 +159,10 @@ private:
 		std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
 		textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
 
+		//std::vector<Material> materials = loadMaterial(material);
+		Material materialProperties = loadMaterial(material);
 		// return a mesh object created from the extracted mesh data
-		return Mesh(vertices, indices, textures);
+		return Mesh(vertices, indices, textures, materialProperties);
 	}
 
 	// checks all material textures of a given type and loads the textures if they're not loaded yet.
@@ -194,6 +196,26 @@ private:
 			}
 		}
 		return textures;
+	}
+
+	Material loadMaterial(aiMaterial* mat) {
+		Material material;
+		aiColor3D color(0.f, 0.f, 0.f);
+		float shininess;
+
+		mat->Get(AI_MATKEY_COLOR_DIFFUSE, color);
+		material.Diffuse = glm::vec3(color.r, color.g, color.b);
+
+		mat->Get(AI_MATKEY_COLOR_AMBIENT, color);
+		material.Ambient = glm::vec3(color.r, color.g, color.b);
+
+		mat->Get(AI_MATKEY_COLOR_SPECULAR, color);
+		material.Specular = glm::vec3(color.r, color.g, color.b);
+
+		mat->Get(AI_MATKEY_SHININESS, shininess);
+		material.Shininess = shininess;
+
+		return material;
 	}
 };
 

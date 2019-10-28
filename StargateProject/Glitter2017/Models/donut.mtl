@@ -1,0 +1,13 @@
+# Blender MTL File: 'donut.blend'
+# Material Count: 1
+
+newmtl Material.003
+Ns 464.601706
+Ka 1.000000 1.000000 1.000000
+Kd 0.800000 0.374458 0.127475
+Ks 0.516807 0.516807 0.516807
+Ke 0.0 0.0 0.0
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd Donut_texture.png
