@@ -311,17 +311,26 @@ public:
 		(*lightCounter)++;
 	}
 
-	void draw(Shader shader, glm::mat4 modelMatrix, glm::mat4 viewMatrix, glm::mat4 projectionMatrix) {
+	void draw(Shader shader, glm::mat4 modelMatrix, glm::mat4 viewMatrix, glm::mat4 projectionMatrix, glm::vec3 viewPos) {
 		shader.use();
-		glm::mat4 model = glm::translate(modelMatrix, glm::vec3(this->Position));
-		model = glm::scale(model, glm::vec3(this->Size, this->Size, this->Size));
-		shader.setMatrix4("model", model);
-		shader.setMatrix4("projection", projectionMatrix);
-		shader.setMatrix4("view", viewMatrix);
-		shader.setVector3f("color", this->Color);
-		glBindVertexArray(this->VAO);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0); // draw the light
-		glBindVertexArray(0);
+		if (this->type == POINTLIGHT) { //only point lights are drawn
+			glm::mat4 model = glm::translate(modelMatrix, glm::vec3(this->Position));
+			model = glm::scale(model, glm::vec3(this->Size, this->Size, this->Size));
+			shader.setMatrix4("model", model);
+			shader.setMatrix4("projection", projectionMatrix);
+			shader.setMatrix4("view", viewMatrix);
+			shader.setVector3f("color", this->Color / (max(max(this->Color.x, this->Color.y), this->Color.z))); //need to give full intensity for a color source to be bright...
+														//so dividing by the highest component to get 1 as max component
+			shader.setVector3f("thisLight.position", this->Position);
+			shader.setVector3f("viewPos", viewPos);
+			shader.setInteger("thisLight.attenuationBool", this->AttenuationBool);
+			shader.setFloat("thisLight.constant", this->AttenuationConstant);
+			shader.setFloat("thisLight.linear", this->AttenuationLinear /50); //better when light source is not as attenuated as what it lights up... 
+			shader.setFloat("thisLight.quadratic", this->AttenuationQuadratic /100);//... so attenuation is reduced
+			glBindVertexArray(this->VAO);
+			glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0); // draw the light
+			glBindVertexArray(0);
+		}
 	}
 
 	void updatePosition(glm::vec3 pos) {
@@ -356,6 +365,8 @@ public:
 	GLuint getVAO() {
 		return this->VAO;
 	}
+
+
 
 
 
