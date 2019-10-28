@@ -21,7 +21,7 @@ file_extension = ".png"
 
 name_map = [ \
      ["", "posy", "", ""],
-     ["negz", "negx", "posz", "posx"],
+     ["negx", "posz", "posx", "negz"],
      ["", "negy", "", ""]]
 
 try:

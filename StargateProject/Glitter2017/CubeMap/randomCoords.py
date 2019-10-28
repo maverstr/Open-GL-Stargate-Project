@@ -4,9 +4,8 @@ Created on Sat Oct 26 18:46:04 2019
 
 @author: Maxime
 """
-from math import sqrt, pow
+from math import sqrt
 from random import randrange
-print("Printing random integer ", randrange(0, 10, 2))
 
 f = open("StarsRandomCoords.txt", "w")
 for i in range(10000):
