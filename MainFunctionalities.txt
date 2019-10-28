@@ -1,0 +1,8 @@
+- Automatic stars procedural generation with python script, reading of the file in the c++ code and drawing of the stars with variable size far away in the sky
+- cubemap/skybox in space
+- Phong's light algorithm (ambient, diffuse, specular)
+- light attenuation with distance
+- 3 different types of lightsources (point light, directional, spotlight/flashlight) with their own class
+- use of emission maps for other light sources on the object itself (as well as diffuse and specular maps)
+- 6DOF camera with smooth controls, and "sprint"
+- Model and Mesh class modified for importantion of OBJ files and use of their base materials as well as multiple texture and other maps
