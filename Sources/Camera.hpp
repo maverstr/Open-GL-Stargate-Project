@@ -66,7 +66,7 @@ public:
     // Returns the view matrix calculated using Eular Angles and the LookAt Matrix
     glm::mat4 GetViewMatrix()
     {
-        return glm::lookAt(this->Position, this->Position + this->Front, this->Up);
+        return glm::lookAt(this->Position, this->Position + this->Front, -(this->Up));
     }
 
     // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
@@ -78,13 +78,13 @@ public:
         if (direction == BACKWARD)
             this->Position -= this->Front * velocity;
         if (direction == LEFT)
-            this->Position += this->Right * velocity;
-        if (direction == RIGHT)
             this->Position -= this->Right * velocity;
+        if (direction == RIGHT)
+            this->Position += this->Right * velocity;
 		if (direction == UP)
-			this->Position -= this->WorldUp * velocity;
-		if (direction == DOWN)
 			this->Position += this->WorldUp * velocity;
+		if (direction == DOWN)
+			this->Position -= this->WorldUp * velocity;
     }
 
     // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
@@ -93,8 +93,8 @@ public:
         xoffset *= this->MouseSensitivity;
         yoffset *= this->MouseSensitivity;
 
-        this->Yaw   -= xoffset;
-        this->Pitch -= yoffset;
+        this->Yaw   += xoffset;
+        this->Pitch += yoffset;
 
         // Make sure that when pitch is out of bounds, screen doesn't get flipped
         if (constrainPitch)

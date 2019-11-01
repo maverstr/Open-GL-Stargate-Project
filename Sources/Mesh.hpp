@@ -38,6 +38,7 @@ struct Material {
 	glm::vec3 Diffuse;
 	glm::vec3 Specular;
 	glm::vec3 Ambient;
+	glm::vec3 Emission;
 	float Shininess;
 };
 
@@ -71,6 +72,8 @@ public:
 		unsigned int specularNr = 1;
 		unsigned int normalNr = 1;
 		unsigned int heightNr = 1;
+		unsigned int emissionNr = 1;
+
 		for (unsigned int i = 0; i < textures.size(); i++)
 		{
 			glActiveTexture(GL_TEXTURE0 + i); // active proper texture unit before binding
@@ -85,6 +88,8 @@ public:
 				number = std::to_string(normalNr++); // transfer unsigned int to stream
 			else if (name == "texture_height")
 				number = std::to_string(heightNr++); // transfer unsigned int to stream
+			else if (name == "texture_emission")
+				number = std::to_string(emissionNr++); // transfer unsigned int to stream
 
 													 // now set the sampler to the correct texture unit
 			glUniform1i(glGetUniformLocation(shader.ID, (name + number).c_str()), i);
@@ -96,6 +101,7 @@ public:
 		shader.setVector3f("material.ambient", this->material.Ambient);
 		shader.setVector3f("material.diffuse", this->material.Diffuse);
 		shader.setVector3f("material.specular", this->material.Specular);
+		shader.setVector3f("material.emission", this->material.Emission);
 		shader.setFloat("material.shininess", this->material.Shininess);
 		if (textures.size() == 0) {//if there are no textures then the whole object is defined as the material properties, hence 1 of mix ratio
 			shader.setFloat("material.mixRatio", 1.0);

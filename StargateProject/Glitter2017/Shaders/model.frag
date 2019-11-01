@@ -6,11 +6,12 @@ struct Material {
     sampler2D texture_specular1;
 	sampler2D texture_normal1;
 	sampler2D texture_height1;
-	sampler2D emissionMap;
+	sampler2D texture_emisson1;
 	float shininess;
 	vec3 ambient; //material properties
 	vec3 diffuse;
 	vec3 specular;
+	vec3 emission;
 	float mixRatio; //use of texture combiner to render them all
 };
 
@@ -33,7 +34,7 @@ struct Light {
     float quadratic;
 };
 
-#define NR_POINT_LIGHTS 5 //for optimization purposes, I only render the 5 closest light sources
+#define NR_POINT_LIGHTS 10 //for optimization purposes, I only render the 10 closest light sources
 
 in vec3 Normal;  
 in vec3 FragPos;  
@@ -111,6 +112,6 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 
 vec3 calcEmission(void){
 	// emission
-	vec3 emission = texture(material.emissionMap, TexCoords).rgb;
+	vec3 emission = mix(texture(material.texture_emisson1, TexCoords).rgb, material.emission, material.mixRatio);
 	return emission;
 }

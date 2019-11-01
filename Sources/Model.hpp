@@ -117,16 +117,22 @@ private:
 			}
 			else
 				vertex.TexCoords = glm::vec2(0.0f, 0.0f);
-			// tangent
-			vector.x = mesh->mTangents[i].x;
-			vector.y = mesh->mTangents[i].y;
-			vector.z = mesh->mTangents[i].z;
-			vertex.Tangent = vector;
-			// bitangent
-			vector.x = mesh->mBitangents[i].x;
-			vector.y = mesh->mBitangents[i].y;
-			vector.z = mesh->mBitangents[i].z;
-			vertex.Bitangent = vector;
+			try {
+				// tangent
+				vector.x = mesh->mTangents[i].x;
+				vector.y = mesh->mTangents[i].y;
+				vector.z = mesh->mTangents[i].z;
+				vertex.Tangent = vector;
+				// bitangent
+				vector.x = mesh->mBitangents[i].x;
+				vector.y = mesh->mBitangents[i].y;
+				vector.z = mesh->mBitangents[i].z;
+				vertex.Bitangent = vector;
+			}
+			catch (exception e) {
+				vertex.Tangent = glm::vec3(0.0f, 0.0f, 0.0f);
+				vertex.Bitangent = glm::vec3(0.0f, 0.0f, 0.0f);
+			}
 			vertices.push_back(vertex);
 		}
 		// now wak through each of the mesh's faces (a face is a mesh its triangle) and retrieve the corresponding vertex indices.
@@ -158,8 +164,10 @@ private:
 		// 4. height maps
 		std::vector<Texture> heightMaps = loadMaterialTextures(material, aiTextureType_AMBIENT, "texture_height");
 		textures.insert(textures.end(), heightMaps.begin(), heightMaps.end());
+		// 5. emission maps
+		std::vector<Texture> emissionMaps = loadMaterialTextures(material, aiTextureType_EMISSIVE, "texture_emission");
+		textures.insert(textures.end(), emissionMaps.begin(), emissionMaps.end());
 
-		//std::vector<Material> materials = loadMaterial(material);
 		Material materialProperties = loadMaterial(material);
 		// return a mesh object created from the extracted mesh data
 		return Mesh(vertices, indices, textures, materialProperties);
@@ -211,6 +219,9 @@ private:
 
 		mat->Get(AI_MATKEY_COLOR_SPECULAR, color);
 		material.Specular = glm::vec3(color.r, color.g, color.b);
+
+		mat->Get(AI_MATKEY_COLOR_EMISSIVE, color);
+		material.Emission = glm::vec3(color.r, color.g, color.b);
 
 		mat->Get(AI_MATKEY_SHININESS, shininess);
 		material.Shininess = shininess;
