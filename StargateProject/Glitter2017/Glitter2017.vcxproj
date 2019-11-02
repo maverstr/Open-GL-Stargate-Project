@@ -124,6 +124,7 @@
   <ItemGroup>
     <ClInclude Include="..\..\Sources\Camera.hpp" />
     <ClInclude Include="..\..\Sources\glitter.hpp" />
+    <ClInclude Include="..\..\Sources\Jumper.hpp" />
     <ClInclude Include="..\..\Sources\LightSource.h" />
     <ClInclude Include="..\..\Sources\Mesh.hpp" />
     <ClInclude Include="..\..\Sources\Model.hpp" />

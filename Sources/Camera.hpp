@@ -10,12 +10,12 @@
 
 // Defines several possible options for camera movement. Used as abstraction to stay away from window-system specific input methods
 enum Camera_Movement {
-    FORWARD,
-    BACKWARD,
-    LEFT,
-    RIGHT,
-	UP,
-	DOWN	
+	CAM_FORWARD,
+	CAM_BACKWARD,
+	CAM_LEFT,
+	CAM_RIGHT,
+	CAM_UP,
+	CAM_DOWN
 };
 
 // Default camera values
@@ -73,17 +73,17 @@ public:
     void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
     {
         GLfloat velocity = this->MovementSpeed * deltaTime;
-        if (direction == FORWARD)
+        if (direction == CAM_FORWARD)
             this->Position += this->Front * velocity;
-        if (direction == BACKWARD)
+        if (direction == CAM_BACKWARD)
             this->Position -= this->Front * velocity;
-        if (direction == LEFT)
+        if (direction == CAM_LEFT)
             this->Position -= this->Right * velocity;
-        if (direction == RIGHT)
+        if (direction == CAM_RIGHT)
             this->Position += this->Right * velocity;
-		if (direction == UP)
+		if (direction == CAM_UP)
 			this->Position += this->WorldUp * velocity;
-		if (direction == DOWN)
+		if (direction == CAM_DOWN)
 			this->Position -= this->WorldUp * velocity;
     }
 

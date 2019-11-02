@@ -313,7 +313,7 @@ public:
 
 	void draw(Shader shader, glm::mat4 modelMatrix, glm::mat4 viewMatrix, glm::mat4 projectionMatrix, glm::vec3 viewPos) {
 		shader.use();
-		if (this->type == POINTLIGHT) { //only point lights are drawn
+		if (this->type == POINTLIGHT || this->type == SPOTLIGHT) { //only point lights are drawn
 			glm::mat4 model = glm::translate(modelMatrix, glm::vec3(this->Position));
 			model = glm::scale(model, glm::vec3(this->Size, this->Size, this->Size));
 			shader.setMatrix4("model", model);
