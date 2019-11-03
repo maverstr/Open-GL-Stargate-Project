@@ -49,6 +49,8 @@ public:
     GLfloat MouseSensitivity;
     GLfloat Fov;
 
+	glm::mat4 rotMatTotal;
+
 
     // Constructor with vectors
 	Jumper(Model* model, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH) : Front(glm::vec3(1.0f, 0.0f, 0.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVTY)
@@ -77,18 +79,30 @@ public:
 		if (direction == DOWN)
 			this->Position -= this->Up * velocity;
 
-		if (direction == PITCH_UP)
-			this->Pitch += velocity; this->deltaPitch = velocity;
-		if (direction == PITCH_DOWN)
-			this->Pitch -= velocity; this->deltaPitch = -velocity;
-		if (direction == ROLL_RIGHT)
-			this->Roll += velocity; this->deltaRoll = velocity;
-		if (direction == ROLL_LEFT)
-			this->Roll -= velocity; this->deltaRoll = -velocity;
-		if (direction == YAW_RIGHT)
-			this->Yaw += velocity; this->deltaYaw = velocity;
-		if (direction == YAW_LEFT)
-			this->Yaw -= velocity; this->deltaYaw = -velocity;
+		if (direction == PITCH_UP) {
+			this->Pitch += velocity;
+			this->deltaPitch = velocity;
+		}
+		if (direction == PITCH_DOWN){
+			this->Pitch -= velocity;
+			this->deltaPitch = -velocity;
+		}
+		if (direction == ROLL_RIGHT){
+			this->Roll += velocity;
+			this->deltaRoll = velocity;
+		}
+		if (direction == ROLL_LEFT){
+			this->Roll -= velocity; 
+			this->deltaRoll = -velocity;
+		}
+		if (direction == YAW_RIGHT){
+			this->Yaw += velocity;
+			this->deltaYaw = velocity;
+		}
+		if (direction == YAW_LEFT){
+			this->Yaw -= velocity;
+			this->deltaYaw = -velocity;
+		}
 
 		// Update Front, Right and Up Vectors using the updated Eular angles
 		this->updateVectors();
@@ -145,25 +159,68 @@ public:
 	}
 
 private:
-    // Calculates the front vector from the Camera's (updated) Eular Angles
-    void updateVectors()
-    {
-        // Calculate the new Front vector
-        glm::vec3 front, up;
-        front.x = cos(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
-        front.y = sin(glm::radians(this->Pitch));
-        front.z = sin(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
-        this->Front = glm::normalize(front);
-		
-		up.x = -cos(glm::radians(this->Yaw)) * sin(glm::radians(this->Pitch)) * sin(glm::radians(this->Roll)) - sin(glm::radians(this->Yaw)) * cos(glm::radians(this->Roll));
-		up.y = -sin(glm::radians(this->Yaw)) * sin(glm::radians(this->Pitch)) * sin(glm::radians(this->Roll)) + cos(glm::radians(this->Yaw)) * cos(glm::radians(this->Roll));
-		up.z = cos(glm::radians(this->Pitch)) * sin(glm::radians(this->Roll));
+//    // Calculates the front vector from the Camera's (updated) Eular Angles
+//    void updateVectors()
+//    {
+//        // Calculate the new Front vector
+//        glm::vec3 front, up;
+//        front.x = cos(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
+//        front.y = sin(glm::radians(this->Pitch));
+//        front.z = sin(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
+//        this->Front = glm::normalize(front);
+//		
+//		up.x = -cos(glm::radians(this->Yaw)) * sin(glm::radians(this->Pitch)) * sin(glm::radians(this->Roll)) - sin(glm::radians(this->Yaw)) * cos(glm::radians(this->Roll));
+//		up.y = -sin(glm::radians(this->Yaw)) * sin(glm::radians(this->Pitch)) * sin(glm::radians(this->Roll)) + cos(glm::radians(this->Yaw)) * cos(glm::radians(this->Roll));
+//		up.z = cos(glm::radians(this->Pitch)) * sin(glm::radians(this->Roll));
+//		cout << "P:"<< this->Pitch << "Y:" << this->Yaw << "R:" << this->Roll << endl;
+//		cout << "up: " << endl;
+//		cout << up.x << " " << up.y << " " << up.z << endl;
+//		// Also re-calculate the Right and Up vector
+//		//this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
+//		//this->Right = glm::normalize(right);
+//		this->Up = glm::normalize(up);
+//		//this->Up    = glm::normalize(glm::cross(this->Right, this->Front));
+//		this->Right = glm::normalize(glm::cross(this->Front, this->Up));
+//    }
 
-		// Also re-calculate the Right and Up vector
-		//this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-		//this->Right = glm::normalize(right);
+	// Calculates the front vector from the Camera's (updated) Eular Angles
+	void updateVectors()
+	{
+		// Calculate the new Front vector
+		static glm::vec4 front = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+		static glm::vec4 up = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+		static glm::vec4 right = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
+		static glm::mat4 rotMatTotal = glm::mat4(1.0f);
+
+		glm::mat4 rotMat = glm::mat4(1.0f);
+		rotMat = glm::rotate(rotMat, glm::radians(this->deltaRoll), glm::vec3(front));
+		rotMatTotal = rotMat * rotMatTotal;
+		front = rotMat * front;
+		up = rotMat * up;
+		right = rotMat * right;
+
+		rotMat = glm::mat4(1.0f);
+		rotMat = glm::rotate(rotMat, glm::radians(this->deltaYaw), glm::vec3(up));
+		rotMatTotal = glm::rotate(rotMatTotal, glm::radians(this->deltaYaw), glm::vec3(up));
+		front = rotMat * front;
+		up = rotMat * up;
+		right = rotMat * right;
+
+		rotMat = glm::mat4(1.0f);
+		rotMat = glm::rotate(rotMat, glm::radians(this->deltaPitch), glm::vec3(right));
+		rotMatTotal = glm::rotate(rotMatTotal, glm::radians(this->deltaPitch), glm::vec3(right));
+		front = rotMat * front;
+		up = rotMat * up;
+		right = rotMat * right;
+
+		this->Front = glm::normalize(front);
 		this->Up = glm::normalize(up);
-		//this->Up    = glm::normalize(glm::cross(this->Right, this->Front));
 		this->Right = glm::normalize(glm::cross(this->Front, this->Up));
-    }
+		this->rotMatTotal = rotMatTotal;
+
+		cout << "P:" << this->Pitch << "Y:" << this->Yaw << "R:" << this->Roll << endl;
+		cout << "up: " << endl;
+		cout << up.x << " " << up.y << " " << up.z << endl;
+
+	}
 };
