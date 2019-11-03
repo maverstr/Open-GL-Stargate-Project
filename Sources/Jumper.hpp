@@ -32,9 +32,9 @@ class Jumper
 public:
     // Camera Attributes
     glm::vec3 Position;
-    glm::vec3 Front;
-    glm::vec3 Up;
-    glm::vec3 Right;
+    glm::vec4 Front;
+    glm::vec4 Up;
+    glm::vec4 Right;
     glm::vec3 WorldUp;
 	Model *thisModel;
     // Eular Angles
@@ -53,13 +53,17 @@ public:
 
 
     // Constructor with vectors
-	Jumper(Model* model, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH) : Front(glm::vec3(1.0f, 0.0f, 0.0f)), MovementSpeed(SPEED), MouseSensitivity(SENSITIVTY)
+	Jumper(Model* model, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH) : MovementSpeed(SPEED), MouseSensitivity(SENSITIVTY)
     {
 		this->thisModel = model;
         this->Position = position;
         this->WorldUp = up;
         this->Yaw = yaw;
         this->Pitch = pitch;
+		this->rotMatTotal = glm::mat4(1.0f);
+		this->Front = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
+		this->Up = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
+		this->Right = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
         this->updateVectors();
     }
     // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
@@ -67,17 +71,17 @@ public:
     {
         GLfloat velocity = this->MovementSpeed * deltaTime;
         if (direction == FORWARD)
-            this->Position += this->Front * velocity;
+            this->Position += glm::vec3(this->Front) * velocity;
         if (direction == BACKWARD)
-            this->Position -= this->Front * velocity;
+            this->Position -= glm::vec3(this->Front) * velocity;
         if (direction == LEFT)
-            this->Position -= this->Right * velocity;
+            this->Position -= glm::vec3(this->Right) * velocity;
         if (direction == RIGHT)
-            this->Position += this->Right * velocity;
+            this->Position += glm::vec3(this->Right) * velocity;
 		if (direction == UP)
-			this->Position += this->Up * velocity;
+			this->Position += glm::vec3(this->Up) * velocity;
 		if (direction == DOWN)
-			this->Position -= this->Up * velocity;
+			this->Position -= glm::vec3(this->Up) * velocity;
 
 		if (direction == PITCH_UP) {
 			this->Pitch += velocity;
@@ -159,68 +163,43 @@ public:
 	}
 
 private:
-//    // Calculates the front vector from the Camera's (updated) Eular Angles
-//    void updateVectors()
-//    {
-//        // Calculate the new Front vector
-//        glm::vec3 front, up;
-//        front.x = cos(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
-//        front.y = sin(glm::radians(this->Pitch));
-//        front.z = sin(glm::radians(this->Yaw)) * cos(glm::radians(this->Pitch));
-//        this->Front = glm::normalize(front);
-//		
-//		up.x = -cos(glm::radians(this->Yaw)) * sin(glm::radians(this->Pitch)) * sin(glm::radians(this->Roll)) - sin(glm::radians(this->Yaw)) * cos(glm::radians(this->Roll));
-//		up.y = -sin(glm::radians(this->Yaw)) * sin(glm::radians(this->Pitch)) * sin(glm::radians(this->Roll)) + cos(glm::radians(this->Yaw)) * cos(glm::radians(this->Roll));
-//		up.z = cos(glm::radians(this->Pitch)) * sin(glm::radians(this->Roll));
-//		cout << "P:"<< this->Pitch << "Y:" << this->Yaw << "R:" << this->Roll << endl;
-//		cout << "up: " << endl;
-//		cout << up.x << " " << up.y << " " << up.z << endl;
-//		// Also re-calculate the Right and Up vector
-//		//this->Right = glm::normalize(glm::cross(this->Front, this->WorldUp));  // Normalize the vectors, because their length gets closer to 0 the more you look up or down which results in slower movement.
-//		//this->Right = glm::normalize(right);
-//		this->Up = glm::normalize(up);
-//		//this->Up    = glm::normalize(glm::cross(this->Right, this->Front));
-//		this->Right = glm::normalize(glm::cross(this->Front, this->Up));
-//    }
 
 	// Calculates the front vector from the Camera's (updated) Eular Angles
 	void updateVectors()
 	{
 		// Calculate the new Front vector
-		static glm::vec4 front = glm::vec4(1.0f, 0.0f, 0.0f, 1.0f);
-		static glm::vec4 up = glm::vec4(0.0f, 1.0f, 0.0f, 1.0f);
-		static glm::vec4 right = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
-		static glm::mat4 rotMatTotal = glm::mat4(1.0f);
+
 
 		glm::mat4 rotMat = glm::mat4(1.0f);
-		rotMat = glm::rotate(rotMat, glm::radians(this->deltaRoll), glm::vec3(front));
-		rotMatTotal = rotMat * rotMatTotal;
-		front = rotMat * front;
-		up = rotMat * up;
-		right = rotMat * right;
+		rotMat = glm::rotate(rotMat, glm::radians(this->deltaYaw), glm::vec3(this->Up));
+		this->Front = rotMat * this->Front;
+		this->Up = rotMat * this->Up;
+		this->Right = rotMat * this->Right, 1.0f;
 
 		rotMat = glm::mat4(1.0f);
-		rotMat = glm::rotate(rotMat, glm::radians(this->deltaYaw), glm::vec3(up));
-		rotMatTotal = glm::rotate(rotMatTotal, glm::radians(this->deltaYaw), glm::vec3(up));
-		front = rotMat * front;
-		up = rotMat * up;
-		right = rotMat * right;
+		rotMat = glm::rotate(rotMat, glm::radians(this->deltaPitch), glm::vec3(this->Right));
+		this->Front = rotMat * this->Front;
+		this->Up = rotMat * this->Up;
+		this->Right = rotMat * this->Right;
 
 		rotMat = glm::mat4(1.0f);
-		rotMat = glm::rotate(rotMat, glm::radians(this->deltaPitch), glm::vec3(right));
-		rotMatTotal = glm::rotate(rotMatTotal, glm::radians(this->deltaPitch), glm::vec3(right));
-		front = rotMat * front;
-		up = rotMat * up;
-		right = rotMat * right;
+		
+		rotMat = glm::rotate(rotMat, glm::radians(this->deltaRoll), glm::vec3(this->Front));
+		this->Front = rotMat * this->Front;
+		this->Up = rotMat * this->Up;
+		this->Right = rotMat * this->Right;
 
-		this->Front = glm::normalize(front);
-		this->Up = glm::normalize(up);
-		this->Right = glm::normalize(glm::cross(this->Front, this->Up));
+		this->Front = glm::normalize(this->Front); // glm::normalize(front);
+		this->Up = glm::normalize(this->Up); // glm::normalize(up);
+		this->Right = glm::vec4(glm::normalize(glm::cross(glm::vec3(this->Front), glm::vec3(this->Up))),1.0f);
 		this->rotMatTotal = rotMatTotal;
 
-		cout << "P:" << this->Pitch << "Y:" << this->Yaw << "R:" << this->Roll << endl;
-		cout << "up: " << endl;
-		cout << up.x << " " << up.y << " " << up.z << endl;
+		/* build a coordinate system change matrix from */
+		this->rotMatTotal = glm::mat4(1.0f);
+		this->rotMatTotal[0] = this->Right;
+		this->rotMatTotal[1] = this->Up;
+		this->rotMatTotal[2] = this->Front;
+
 
 	}
 };
