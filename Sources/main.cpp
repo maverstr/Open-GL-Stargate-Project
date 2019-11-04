@@ -48,7 +48,7 @@ GLuint createCubeMapTexture(void);
 GLuint createStarsVAO(int* starsCount, int maxStars = 0);
 
 //Coordinate systems
-glm::mat4 moveModel(glm::mat4 model, glm::vec3 modelPosition, glm::vec3 rotationModel, Jumper jumper);
+glm::mat4 moveModel(Jumper jumper);
 glm::mat4 createProjectionMatrix(void);
 glm::mat4 createViewMatrix(void);
 glm::mat4 createModelMatrix(void);
@@ -89,7 +89,6 @@ int lightCounter = 0;
 
 //jumper
 glm::vec3 flashlightJumperOffset = glm::vec3(0.0f, -1.27f, 5.5f);
-glm::mat4 modelJumper = glm::mat4(1.0f);
 
 //stars
 int starsCount = 0;
@@ -186,16 +185,9 @@ int main(int argc, char* argv[]) {
 	lightArray.push_back(&blueLight);
 	LightSource flashLight = LightSource(&lightCounter, SPOTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.022f, 0.0019f, camera.Front, 4.5f, 6.5f, 0.5f, 0);
 	lightArray.push_back(&flashLight);
-	LightSource jumperFlashLight = LightSource(&lightCounter, SPOTLIGHT, jumper1.Position + flashlightJumperOffset, glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.022f, 0.0019f, glm::vec3(0.0f,0.0f,1.0f), 8.5f, 12.5f, 0.5f, 0);
+	LightSource jumperFlashLight = LightSource(&lightCounter, SPOTLIGHT, jumper1.Position + flashlightJumperOffset, glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.022f, 0.0019f, glm::vec3(0.0f,0.0f,1.0f), 8.5f, 12.5f, 0.2f, 0);
 	lightArray.push_back(&jumperFlashLight);
 
-
-	LightSource lightX = LightSource(&lightCounter, POINTLIGHT, glm::vec3(8.0f, 4.0f, 2.0f), glm::vec3(0.0f, 0.3f, 0.3f), 1.0f, 0.022f, 0.0019f, 0.5f, lightVAO);
-	lightArray.push_back(&lightX);
-	LightSource lightY = LightSource(&lightCounter, POINTLIGHT, glm::vec3(8.0f, 4.0f, 2.0f), glm::vec3(0.0f, 0.3f, 0.3f), 1.0f, 0.022f, 0.0019f, 0.5f, lightVAO);
-	lightArray.push_back(&lightY);
-	LightSource lightZ = LightSource(&lightCounter, POINTLIGHT, glm::vec3(8.0f, 4.0f, 2.0f), glm::vec3(0.0f, 0.3f, 0.3f), 1.0f, 0.022f, 0.0019f, 0.5f, lightVAO);
-	lightArray.push_back(&lightZ);
 
 	//camera initial look at position
 	camera.setInitialLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -290,11 +282,12 @@ int main(int argc, char* argv[]) {
 		glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		
-		/*
+		
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		//model drawing
 		stargateShader.use();
-		stargateShader.setMatrix4("model", glm::mat4(1.0f));
+		glm::mat4 stargateModel = glm::translate(glm::mat4(1.0f), glm::vec3(-15.0f, -15.0f, -5.0f));
+		stargateShader.setMatrix4("model", stargateModel);
 		stargateShader.setMatrix4("view", viewMatrix);
 		stargateShader.setMatrix4("projection", projectionMatrix);
 		stargateShader.setVector3f("objectColor", 1.0f, 0.5f, 0.0f);
@@ -307,13 +300,12 @@ int main(int argc, char* argv[]) {
 			(*lightArray[i]).setModelShaderLightParameters(stargateShader, i);
 		}
 		StargateModel.Draw(stargateShader);
-		*/
+		
 
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		//model drawing
 		jumperShader.use();
-		modelJumper = moveModel(modelJumper, jumper1.Position, glm::vec3(jumper1.deltaPitch, jumper1.deltaRoll, jumper1.deltaYaw), jumper1);
-		jumperShader.setMatrix4("model", modelJumper);
+		jumperShader.setMatrix4("model", moveModel(jumper1));
 		jumperShader.setMatrix4("view", viewMatrix);
 		jumperShader.setMatrix4("projection", projectionMatrix);
 		jumperShader.setVector3f("objectColor", 1.0f, 0.5f, 0.0f);
@@ -328,7 +320,7 @@ int main(int argc, char* argv[]) {
 
 
 
-		/*
+		
 		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 		//Stars drawing
 		glBindVertexArray(starsVAO);
@@ -336,25 +328,18 @@ int main(int argc, char* argv[]) {
 		starsShader.setMatrix4("MVP", MVPMatrix);
 		glDrawArraysInstanced(GL_POINTS, 0, 1, starsCount); //uses instance drawing for the stars
 		glBindVertexArray(0);
-		*/
+		
 		//light drawing
 		lightShader.use();
 		flashLight.updateFlashLightDirection(camera.Front);
 		flashLight.updatePosition(camera.Position);
-		jumperFlashLight.updatePosition(jumper1.Position + flashlightJumperOffset);
+		jumperFlashLight.updateFlashLightDirection(jumper1.Front);
+		jumperFlashLight.updatePosition(jumper1.Position + glm::vec3(jumper1.Right * flashlightJumperOffset.x) + glm::vec3(jumper1.Up * flashlightJumperOffset.y) + glm::vec3(jumper1.Front * flashlightJumperOffset.z));
 		jumperFlashLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 
 		rotatingLight.updatePosition(glm::vec3(sin(glfwGetTime() * 0.6f) * 10.0f, cos(glfwGetTime() * 0.3f) * 7.0f, sin(glfwGetTime()) * 8.0f));
 		rotatingLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 		blueLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-
-		lightX.updatePosition(jumper1.Front*5.0f);
-		lightY.updatePosition(jumper1.Right*5.0f);
-		lightZ.updatePosition(jumper1.Up*5.0f);
-		lightX.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-		lightY.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-		lightZ.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-
 
 		
 		// Flip Buffers and Draw
@@ -490,7 +475,7 @@ GLuint createStarsVAO(int* starsCount, int maxStars) { //maxstars default to zer
 	}
 	float starPosX, starPosY, starPosZ, starSize;
 	int i = 0;
-	const int arraySize = 4; //40000
+	const int arraySize = 40000; 
 	GLfloat starsPositions[] = { 1.0, 1.0, 1.0, 1.0 };
 	glm::vec4 starsInfos[arraySize];
 	while ((positionFile >> starPosX >> starPosY >> starPosZ >> starSize )&& i < arraySize)
@@ -530,16 +515,12 @@ GLuint createStarsVAO(int* starsCount, int maxStars) { //maxstars default to zer
 //////////////////////////////////////////
 ////        COORDINATE SYSTEMS         ///
 //////////////////////////////////////////
-glm::mat4 moveModel(glm::mat4 model, glm::vec3 modelPosition, glm::vec3 rotationModel, Jumper jumper) {
-	
-	return jumper.rotMatTotal;
+glm::mat4 moveModel(Jumper jumper) {
+	glm::mat4 modelMat = jumper.rotMatTotal;
+	//modelMat = glm::translate(modelMat, jumper.Position); why doesn't this work ????
+	modelMat[3] = glm::vec4(jumper.Position, 1.0f);
+	return modelMat;
 }
-
-
-
-
-
-
 
 
 glm::mat4 createViewMatrix(void) {

@@ -70,6 +70,7 @@ public:
     void ProcessKeyboard(Jumper_Movement direction, GLfloat deltaTime)
     {
         GLfloat velocity = this->MovementSpeed * deltaTime;
+		GLfloat turnVelocity = this->MovementSpeed * deltaTime * 5; //slightly faster for turning
         if (direction == FORWARD)
             this->Position += glm::vec3(this->Front) * velocity;
         if (direction == BACKWARD)
@@ -84,28 +85,28 @@ public:
 			this->Position -= glm::vec3(this->Up) * velocity;
 
 		if (direction == PITCH_UP) {
-			this->Pitch += velocity;
-			this->deltaPitch = velocity;
+			this->Pitch += turnVelocity;
+			this->deltaPitch = turnVelocity;
 		}
 		if (direction == PITCH_DOWN){
-			this->Pitch -= velocity;
-			this->deltaPitch = -velocity;
+			this->Pitch -= turnVelocity;
+			this->deltaPitch = -turnVelocity;
 		}
 		if (direction == ROLL_RIGHT){
-			this->Roll += velocity;
-			this->deltaRoll = velocity;
+			this->Roll += turnVelocity;
+			this->deltaRoll = turnVelocity;
 		}
 		if (direction == ROLL_LEFT){
-			this->Roll -= velocity; 
-			this->deltaRoll = -velocity;
+			this->Roll -= turnVelocity;
+			this->deltaRoll = -turnVelocity;
 		}
 		if (direction == YAW_RIGHT){
-			this->Yaw += velocity;
-			this->deltaYaw = velocity;
+			this->Yaw += turnVelocity;
+			this->deltaYaw = turnVelocity;
 		}
 		if (direction == YAW_LEFT){
-			this->Yaw -= velocity;
-			this->deltaYaw = -velocity;
+			this->Yaw -= turnVelocity;
+			this->deltaYaw = -turnVelocity;
 		}
 
 		// Update Front, Right and Up Vectors using the updated Eular angles
@@ -113,7 +114,6 @@ public:
     }
 
 	void clearMovement(void) {
-		this->Position = glm::vec3(0.0f, 0.0f, 0.0f);
 		this->deltaPitch = 0;
 		this->deltaRoll = 0;
 		this->deltaYaw = 0;
@@ -169,12 +169,11 @@ private:
 	{
 		// Calculate the new Front vector
 
-
 		glm::mat4 rotMat = glm::mat4(1.0f);
 		rotMat = glm::rotate(rotMat, glm::radians(this->deltaYaw), glm::vec3(this->Up));
 		this->Front = rotMat * this->Front;
 		this->Up = rotMat * this->Up;
-		this->Right = rotMat * this->Right, 1.0f;
+		this->Right = rotMat * this->Right;
 
 		rotMat = glm::mat4(1.0f);
 		rotMat = glm::rotate(rotMat, glm::radians(this->deltaPitch), glm::vec3(this->Right));
@@ -183,7 +182,6 @@ private:
 		this->Right = rotMat * this->Right;
 
 		rotMat = glm::mat4(1.0f);
-		
 		rotMat = glm::rotate(rotMat, glm::radians(this->deltaRoll), glm::vec3(this->Front));
 		this->Front = rotMat * this->Front;
 		this->Up = rotMat * this->Up;
@@ -199,7 +197,5 @@ private:
 		this->rotMatTotal[0] = this->Right;
 		this->rotMatTotal[1] = this->Up;
 		this->rotMatTotal[2] = this->Front;
-
-
 	}
 };
