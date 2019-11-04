@@ -137,6 +137,11 @@ public:
 		this->updateCameraVectors();
 	}
 
+	void updatePositionFPSView(glm::vec3 pos, glm::vec3 frontPos) {
+		this->Position = pos;
+		this->setInitialLookAt(frontPos);
+	}
+
 private:
     // Calculates the front vector from the Camera's (updated) Eular Angles
     void updateCameraVectors()

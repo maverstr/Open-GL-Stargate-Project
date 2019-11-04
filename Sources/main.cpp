@@ -89,6 +89,7 @@ int lightCounter = 0;
 
 //jumper
 glm::vec3 flashlightJumperOffset = glm::vec3(0.0f, -1.27f, 5.5f);
+glm::vec3 jumperFirstPersonOffset = glm::vec3(0.0f, 0.0f, 5.5f);
 
 //stars
 int starsCount = 0;
@@ -246,6 +247,8 @@ int main(int argc, char* argv[]) {
 		else {
 			camera.MovementSpeed = baseCameraMovementSpeed;
 		}
+
+		//	camera.updatePositionFPSView(jumper1.Position + +glm::vec3(jumper1.Right * jumperFirstPersonOffset.x) + glm::vec3(jumper1.Up * jumperFirstPersonOffset.y) + glm::vec3(jumper1.Front * jumperFirstPersonOffset.z), - jumper1.Front);
 
 		//showFPS();
 		//Calculate coordinate systems every frame
