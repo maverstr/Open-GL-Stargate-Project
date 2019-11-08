@@ -57,8 +57,8 @@ glm::mat4 createMVPMatrix(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 //////////////////////////////////////////
 ////         WINDOW PARAMETERS         ///
 //////////////////////////////////////////
-const int windowWidth = 800;
-const int windowHeight = 600;
+const int windowWidth = 1690;
+const int windowHeight = 1050;
 const char* windowTitle = "Stargate Project";
 
 
@@ -167,6 +167,7 @@ int main(int argc, char* argv[]) {
 	//Textures
 	GLuint skyboxTexture = createCubeMapTexture();
 	stargateShader.use();
+	GLuint jumperReflectionMap = loadTexture("Models/reflectionMapJumper.png");
 
 	//VAO instanciation
 	GLuint AxisVAO = createAxisVAO();
@@ -174,7 +175,7 @@ int main(int argc, char* argv[]) {
 	GLuint starsVAO = createStarsVAO(&starsCount);
 	//GLuint starsVAO = createStarsVAO(&starsCount, 100); //limit max number of stars to 100
 	Model StargateModel = Model("Models/Stargate.obj");
-	Model JumperModel = Model("Models/Jumper.obj");
+	Model JumperModel = Model("Models/jumper.obj");
 	Jumper jumper1 = Jumper(&JumperModel);
 
 	//lights
@@ -289,6 +290,11 @@ int main(int argc, char* argv[]) {
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		//model drawing
 		stargateShader.use();
+		glActiveTexture(GL_TEXTURE15);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+		stargateShader.setInteger("skybox", 15);
+		jumperShader.setFloat("refractionRatio", 0.2f);
+		stargateShader.setInteger("material.reflection", 0);
 		glm::mat4 stargateModel = glm::translate(glm::mat4(1.0f), glm::vec3(-15.0f, -15.0f, -5.0f));
 		stargateShader.setMatrix4("model", stargateModel);
 		stargateShader.setMatrix4("view", viewMatrix);
@@ -308,6 +314,14 @@ int main(int argc, char* argv[]) {
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		//model drawing
 		jumperShader.use();
+		glActiveTexture(GL_TEXTURE15);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+		stargateShader.setInteger("skybox", 15);
+		glActiveTexture(GL_TEXTURE14);
+		glBindTexture(GL_TEXTURE_2D, jumperReflectionMap);
+		stargateShader.setInteger("material.texure_reflectionMap", 14);
+		jumperShader.setFloat("refractionRatio", 0.0f);
+		jumperShader.setInteger("material.reflection", 1);
 		jumperShader.setMatrix4("model", moveModel(jumper1));
 		jumperShader.setMatrix4("view", viewMatrix);
 		jumperShader.setMatrix4("projection", projectionMatrix);
