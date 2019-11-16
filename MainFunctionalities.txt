@@ -9,3 +9,4 @@ The drawing is done using instances to increase performance !!!
 - Model and Mesh class modified for importantion of OBJ files and use of their base materials as well as multiple texture and other maps
 - use of face culling when relevant for a performance increase
 - reflection map (for metallic effect of the ship) using reflection mapping
+- outlining of the model using stencil buffer

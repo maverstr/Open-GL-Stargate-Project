@@ -48,7 +48,7 @@ GLuint createCubeMapTexture(void);
 GLuint createStarsVAO(int* starsCount, int maxStars = 0);
 
 //Coordinate systems
-glm::mat4 moveModel(Jumper jumper);
+glm::mat4 moveModel(Jumper jumper, bool outlining);
 glm::mat4 createProjectionMatrix(void);
 glm::mat4 createViewMatrix(void);
 glm::mat4 createModelMatrix(void);
@@ -90,6 +90,7 @@ int lightCounter = 0;
 //jumper
 glm::vec3 flashlightJumperOffset = glm::vec3(0.0f, -1.27f, 5.5f);
 glm::vec3 jumperFirstPersonOffset = glm::vec3(0.0f, 0.0f, 5.5f);
+bool jumperOutlining = true;
 
 //stars
 int starsCount = 0;
@@ -142,7 +143,10 @@ int main(int argc, char* argv[]) {
 	// Accept fragment if it closer to the camera than the former one
 	glDepthFunc(GL_LESS);
 
-	glEnable(GL_PROGRAM_POINT_SIZE);
+	glEnable(GL_PROGRAM_POINT_SIZE); //allows to modify the point size (used in stars)
+
+	glEnable(GL_STENCIL_TEST);
+	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //do nothing if stencil and depth tests fail (keep values) but replace with 1's if succeed
 
 	//Shaders
 	Shader axisShader = Shader("Shaders/axis.vert", "Shaders/axis.frag");
@@ -157,6 +161,9 @@ int main(int argc, char* argv[]) {
 
 	Shader jumperShader = Shader("Shaders/model.vert", "Shaders/model.frag");
 	jumperShader.compile();
+
+	Shader modelOutlining = Shader("Shaders/modelOutlining.vert", "Shaders/modelOutlining.frag");
+	modelOutlining.compile();
 
 	Shader starsShader = Shader("Shaders/stars.vert", "Shaders/stars.frag");
 	starsShader.compile();
@@ -174,7 +181,7 @@ int main(int argc, char* argv[]) {
 	GLuint skyboxVAO = createCubeMapVAO();
 	GLuint starsVAO = createStarsVAO(&starsCount);
 	//GLuint starsVAO = createStarsVAO(&starsCount, 100); //limit max number of stars to 100
-	Model StargateModel = Model("Models/Stargate.obj");
+	//Model StargateModel = Model("Models/Stargate.obj");
 	Model JumperModel = Model("Models/jumper.obj");
 	Jumper jumper1 = Jumper(&JumperModel);
 
@@ -260,7 +267,8 @@ int main(int argc, char* argv[]) {
 
 		// Background Fill Color
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glStencilMask(0x00); //makes sure we don't update stencil buffer by mistake
 
 
 		//SKYBOX (could be drawn last to optimize performance by not rendering fragments that do not pass the depth test)
@@ -286,14 +294,14 @@ int main(int argc, char* argv[]) {
 		glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		
-		
+		/*
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		//model drawing
 		stargateShader.use();
 		glActiveTexture(GL_TEXTURE15);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
 		stargateShader.setInteger("skybox", 15);
-		jumperShader.setFloat("refractionRatio", 0.2f);
+		stargateShader.setFloat("refractionRatio", 0.2f);
 		stargateShader.setInteger("material.reflection", 0);
 		glm::mat4 stargateModel = glm::translate(glm::mat4(1.0f), glm::vec3(-15.0f, -15.0f, -5.0f));
 		stargateShader.setMatrix4("model", stargateModel);
@@ -310,19 +318,22 @@ int main(int argc, char* argv[]) {
 		}
 		StargateModel.Draw(stargateShader);
 		
+		*/
 
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
+		glStencilMask(0xFF); // enable writing to the stencil buffer
 		//model drawing
 		jumperShader.use();
 		glActiveTexture(GL_TEXTURE15);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-		stargateShader.setInteger("skybox", 15);
+		jumperShader.setInteger("skybox", 15);
 		glActiveTexture(GL_TEXTURE14);
 		glBindTexture(GL_TEXTURE_2D, jumperReflectionMap);
-		stargateShader.setInteger("material.texure_reflectionMap", 14);
+		jumperShader.setInteger("material.texure_reflectionMap", 14);
 		jumperShader.setFloat("refractionRatio", 0.0f);
 		jumperShader.setInteger("material.reflection", 1);
-		jumperShader.setMatrix4("model", moveModel(jumper1));
+		jumperShader.setMatrix4("model", moveModel(jumper1, false));
 		jumperShader.setMatrix4("view", viewMatrix);
 		jumperShader.setMatrix4("projection", projectionMatrix);
 		jumperShader.setVector3f("objectColor", 1.0f, 0.5f, 0.0f);
@@ -335,8 +346,20 @@ int main(int argc, char* argv[]) {
 		}
 		JumperModel.Draw(jumperShader);
 
-
-
+		//outlining of the jumper
+		if (jumperOutlining) {
+			glStencilMask(0xFF); // disable writing to the stencil buffer
+			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //only the parts not equal to 1 (e.i. the model itself) will be drawn so we don't overwrite the model itself
+			glStencilMask(0x00); // disable writing to the stencil buffer
+			glDisable(GL_DEPTH_TEST); //outline is always drawn above everything
+			modelOutlining.use();
+			modelOutlining.setMatrix4("model", moveModel(jumper1, true));
+			modelOutlining.setMatrix4("view", viewMatrix);
+			modelOutlining.setMatrix4("projection", projectionMatrix);
+			JumperModel.Draw(modelOutlining);
+			glStencilMask(0xFF);
+			glEnable(GL_DEPTH_TEST);
+		}
 		
 		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 		//Stars drawing
@@ -532,10 +555,13 @@ GLuint createStarsVAO(int* starsCount, int maxStars) { //maxstars default to zer
 //////////////////////////////////////////
 ////        COORDINATE SYSTEMS         ///
 //////////////////////////////////////////
-glm::mat4 moveModel(Jumper jumper) {
+glm::mat4 moveModel(Jumper jumper, bool outlining) {
 	glm::mat4 modelMat = jumper.rotMatTotal;
-	//modelMat = glm::translate(modelMat, jumper.Position); why doesn't this work ????
+
 	modelMat[3] = glm::vec4(jumper.Position, 1.0f);
+	if (outlining) {
+		modelMat = glm::scale(modelMat, glm::vec3(1.5f, 1.5f, 1.5f));
+	}
 	return modelMat;
 }
 
@@ -681,6 +707,9 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 	cameraMovement[4] = keys[GLFW_KEY_SPACE];
 	cameraMovement[5] = keys[GLFW_KEY_X];
 
+	//jumper outlining
+	if (keys[GLFW_KEY_O])
+		jumperOutlining = !jumperOutlining;
 
 	//Wireframe or point mode 
 	if (keys[GLFW_KEY_1] || keys[GLFW_KEY_KP_1])

@@ -94,5 +94,11 @@
     <None Include="Shaders\modelWithWholeMaterial.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Shaders\modelOutlining.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\modelOutlining.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

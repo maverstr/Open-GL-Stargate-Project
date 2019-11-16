@@ -143,6 +143,8 @@
     <None Include="Shaders\lightSource.vert" />
     <None Include="Shaders\model.frag" />
     <None Include="Shaders\model.vert" />
+    <None Include="Shaders\modelOutlining.frag" />
+    <None Include="Shaders\modelOutlining.vert" />
     <None Include="Shaders\modelWithWholeMaterial.frag" />
     <None Include="Shaders\modelWithWholeMaterial.vert" />
     <None Include="Shaders\skybox.frag" />
