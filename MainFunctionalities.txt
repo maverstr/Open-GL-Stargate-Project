@@ -1,8 +1,9 @@
-- Automatic stars procedural generation with python script, reading of the file in the c++ code and drawing of the stars with variable size far away in the sky. 
+- Automatic stars procedural generation with python script, reading of the file in the c++ code and drawing of the stars with varying size far away in the sky. 
 The drawing is done using instances to increase performance !!!
+- Asteroid drawing using instancing as well
 - cubemap/skybox in space
 - Blinn-Phong's light algorithm (ambient, diffuse, specular)
-- light attenuation with distance
+- light attenuation with distance (makes sense as we are in space, very long distance but not highly realistic)
 - 3 different types of lightsources (point light, directional, spotlight/flashlight) with their own class
 - use of emission maps for other light sources on the object itself (as well as diffuse and specular maps)
 - 6DOF camera with smooth controls, and "sprint"
