@@ -526,7 +526,7 @@ GLuint createStarsVAO(int* starsCount, int maxStars) { //maxstars default to zer
 		starsInfos[i].w = starSize;
 		i++;
 		if ((i >= maxStars) && (maxStars != 0))
-			break; //allows to reduce the number of stars if impact on performance
+			break; //allows to reduce the number of stars if impact on performance (shoud not because instancing !!)
 	}
 	*starsCount = i;
 	GLuint VBO, VAO, instanceVBO;
@@ -535,22 +535,84 @@ GLuint createStarsVAO(int* starsCount, int maxStars) { //maxstars default to zer
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(starsPositions), starsPositions, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)0); //position
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0); //position
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 1, GL_FLOAT, GL_FALSE, 4 * sizeof(GLfloat), (GLvoid*)(3 * sizeof(GLfloat))); //size
-	glEnableVertexAttribArray(1);
 	glGenBuffers(1, &instanceVBO); //instance VBO, picked up from the star file
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(starsInfos), &starsInfos[0], GL_STATIC_DRAW);
-	glEnableVertexAttribArray(2);	//set instance data
+	glEnableVertexAttribArray(1);	//set instance data
 	glBindBuffer(GL_ARRAY_BUFFER, instanceVBO); // this attribute comes from the instance VBO
-	glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
-	glVertexAttribDivisor(2, 1); // tell OpenGL this is an instanced vertex attribute and should send it to VS only once per instance and not once per vertex
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glVertexAttribDivisor(1, 1); // tell OpenGL this is an instanced vertex attribute and should send it to VS only once per instance and not once per vertex
 	glBindVertexArray(0);
 	return VAO;
 }
 
+void createAsteroidVAO(int asteroidAmount, Model asteroidModel, glm::vec3 planetPos) {
+	//Note: largely inspired by learnopengl.com instancing tutorial
+	// generate a large list of semi-random model transformation matrices
+	// ------------------------------------------------------------------
+	unsigned int amount = asteroidAmount;
+	glm::mat4* modelMatrices;
+	modelMatrices = new glm::mat4[amount];
+	srand(glfwGetTime()); // initialize random seed	
+	float radius = 120.0f;
+	float offset = 40.0f;
+	for (unsigned int i = 0; i < amount; i++)
+	{
+		glm::mat4 model = glm::mat4(1.0f);
+		// 1. translation: displace along circle with 'radius' in range [-offset, offset]
+		float angle = (float)i / (float)amount * 360.0f;
+		float displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float x = sin(angle) * radius + displacement + planetPos.x; //adding the planet pos to center the asteroid field on the planet
+		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float y = displacement * 0.3f + planetPos.y; // keep height of asteroid field smaller compared to width of x and z
+		displacement = (rand() % (int)(2 * offset * 100)) / 100.0f - offset;
+		float z = cos(angle) * radius + displacement + planetPos.z;
+		model = glm::translate(model, glm::vec3(x, y, z));
 
+		// 2. scale: Scale between 0.05 and 0.25f
+		float scale = (rand() % 20) / 100.0f + 0.05;
+		model = glm::scale(model, glm::vec3(scale));
+
+		// 3. rotation: add random rotation around a (semi)randomly picked rotation axis vector
+		float rotAngle = (rand() % 360);
+		model = glm::rotate(model, rotAngle, glm::vec3(0.4f, 0.6f, 0.8f));
+
+		// 4. now add to list of matrices
+		modelMatrices[i] = model;
+	}
+
+	// configure instanced array
+// -------------------------
+	unsigned int VBO, VAO;
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, amount * sizeof(glm::mat4), &modelMatrices[0], GL_STATIC_DRAW);
+
+	// set transformation matrices as an instance vertex attribute (with divisor 1)
+	for (unsigned int i = 0; i < asteroidModel.meshes.size(); i++)
+	{
+		VAO = asteroidModel.meshes[i].VAO;
+		glBindVertexArray(VAO);
+		// set attribute pointers for matrix (4 times vec4)
+		glEnableVertexAttribArray(3);
+		glVertexAttribPointer(3, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)0);
+		glEnableVertexAttribArray(4);
+		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(sizeof(glm::vec4)));
+		glEnableVertexAttribArray(5);
+		glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(2 * sizeof(glm::vec4)));
+		glEnableVertexAttribArray(6);
+		glVertexAttribPointer(6, 4, GL_FLOAT, GL_FALSE, sizeof(glm::mat4), (void*)(3 * sizeof(glm::vec4)));
+
+		glVertexAttribDivisor(3, 1);
+		glVertexAttribDivisor(4, 1);
+		glVertexAttribDivisor(5, 1);
+		glVertexAttribDivisor(6, 1);
+
+		glBindVertexArray(0);
+	}
+}
 
 //////////////////////////////////////////
 ////        COORDINATE SYSTEMS         ///
@@ -560,7 +622,7 @@ glm::mat4 moveModel(Jumper jumper, bool outlining) {
 
 	modelMat[3] = glm::vec4(jumper.Position, 1.0f);
 	if (outlining) {
-		modelMat = glm::scale(modelMat, glm::vec3(1.5f, 1.5f, 1.5f));
+		modelMat = glm::scale(modelMat, glm::vec3(1.2f, 1.2f, 1.2f));
 	}
 	return modelMat;
 }

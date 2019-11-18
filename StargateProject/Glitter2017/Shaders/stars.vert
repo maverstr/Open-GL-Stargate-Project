@@ -1,8 +1,7 @@
 #version 410 core
 
 layout(location = 0 ) in vec3 position;
-layout(location = 1) in float size;
-layout(location = 2) in vec4 starInfo;
+layout(location = 1) in vec4 starInfo;
 
 uniform mat4 MVP;
 
