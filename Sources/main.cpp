@@ -21,6 +21,11 @@
 //matrices
 #include <glm/gtc/matrix_transform.hpp>
 
+//audio irrKlang lib
+#include <irrklang/irrKlang.h>
+using namespace irrklang;
+ISoundEngine* SoundEngine = createIrrKlangDevice();
+
 using namespace std;
 
 
@@ -116,6 +121,11 @@ glm::mat4 MVPMatrix = glm::mat4(0);
 ////   MAIN MAIN MAIN MAIN MAIN MAIN   ///
 //////////////////////////////////////////
 int main(int argc, char* argv[]) {
+	//sound to loop during the whole game
+	ISound* music = SoundEngine->play2D("audio/MF-W-90.XM", true, false, true, ESM_AUTO_DETECT, true);
+	ISoundEffectControl* fx = music->getSoundEffectControl();
+	fx->enableWavesReverbSoundEffect(); //adds reverb effect
+
 	// Load GLFW and Create a Window
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);

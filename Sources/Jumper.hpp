@@ -26,11 +26,10 @@ enum Jumper_Movement {
 	YAW_RIGHT
 };
 
-// An abstract camera class that processes input and calculates the corresponding Eular Angles, Vectors and Matrices for use in OpenGL
 class Jumper
 {
 public:
-    // Camera Attributes
+    // Model Attributes
     glm::vec3 Position;
     glm::vec4 Front;
     glm::vec4 Up;
@@ -44,16 +43,14 @@ public:
 	GLfloat deltaYaw;
 	GLfloat deltaPitch;
 	GLfloat deltaRoll;
-    // Camera options
-    GLfloat MovementSpeed;
-    GLfloat MouseSensitivity;
-    GLfloat Fov;
+
+	const float MovementSpeed = 20.0f;
 
 	glm::mat4 rotMatTotal;
 
 
     // Constructor with vectors
-	Jumper(Model* model, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH) : MovementSpeed(SPEED), MouseSensitivity(SENSITIVTY)
+	Jumper(Model* model, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH)
     {
 		this->thisModel = model;
         this->Position = position;
@@ -70,7 +67,9 @@ public:
     void ProcessKeyboard(Jumper_Movement direction, GLfloat deltaTime)
     {
         GLfloat velocity = this->MovementSpeed * deltaTime;
-		GLfloat turnVelocity = this->MovementSpeed * deltaTime * 5; //slightly faster for turning
+		GLfloat pitchVelocity = this->MovementSpeed * deltaTime * 5; //slightly fast for pitching
+		GLfloat RollVelocity = this->MovementSpeed * deltaTime * 9; //faster for rolling
+		GLfloat YawVelocity = this->MovementSpeed * deltaTime * 3; //slightly slow for yawing
         if (direction == FORWARD)
             this->Position += glm::vec3(this->Front) * velocity;
         if (direction == BACKWARD)
@@ -85,28 +84,28 @@ public:
 			this->Position -= glm::vec3(this->Up) * velocity;
 
 		if (direction == PITCH_UP) {
-			this->Pitch += turnVelocity;
-			this->deltaPitch = turnVelocity;
+			this->Pitch += pitchVelocity;
+			this->deltaPitch = pitchVelocity;
 		}
 		if (direction == PITCH_DOWN){
-			this->Pitch -= turnVelocity;
-			this->deltaPitch = -turnVelocity;
+			this->Pitch -= pitchVelocity;
+			this->deltaPitch = -pitchVelocity;
 		}
 		if (direction == ROLL_RIGHT){
-			this->Roll += turnVelocity;
-			this->deltaRoll = turnVelocity;
+			this->Roll += RollVelocity;
+			this->deltaRoll = RollVelocity;
 		}
 		if (direction == ROLL_LEFT){
-			this->Roll -= turnVelocity;
-			this->deltaRoll = -turnVelocity;
+			this->Roll -= RollVelocity;
+			this->deltaRoll = -RollVelocity;
 		}
 		if (direction == YAW_RIGHT){
-			this->Yaw += turnVelocity;
-			this->deltaYaw = turnVelocity;
+			this->Yaw += YawVelocity;
+			this->deltaYaw = YawVelocity;
 		}
 		if (direction == YAW_LEFT){
-			this->Yaw -= turnVelocity;
-			this->deltaYaw = -turnVelocity;
+			this->Yaw -= YawVelocity;
+			this->deltaYaw = -YawVelocity;
 		}
 
 		// Update Front, Right and Up Vectors using the updated Eular angles
@@ -118,28 +117,6 @@ public:
 		this->deltaRoll = 0;
 		this->deltaYaw = 0;
 	}
-
-    // Processes input received from a mouse input system. Expects the offset value in both the x and y direction.
-    void ProcessMouseMovement(GLfloat xoffset, GLfloat yoffset, GLboolean constrainPitch = true)
-    {
-        xoffset *= this->MouseSensitivity;
-        yoffset *= this->MouseSensitivity;
-
-        this->Yaw   += xoffset;
-        this->Pitch += yoffset;
-
-        // Make sure that when pitch is out of bounds, screen doesn't get flipped
-        if (constrainPitch)
-        {
-            if (this->Pitch > 89.0f)
-                this->Pitch = 89.0f;
-            if (this->Pitch < -89.0f)
-                this->Pitch = -89.0f;
-        }
-
-        // Update Front, Right and Up Vectors using the updated Eular angles
-        this->updateVectors();
-    }
 
 	void setInitialLookAt(glm::vec3 lookAtPos) {
 		if ((lookAtPos.x - this->Position.x) == 0.0f) { //avoid division by zero
