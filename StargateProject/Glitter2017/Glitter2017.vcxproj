@@ -137,6 +137,8 @@
     <ClCompile Include="..\..\Sources\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Shaders\asteroid.frag" />
+    <None Include="Shaders\asteroid.vert" />
     <None Include="Shaders\axis.frag" />
     <None Include="Shaders\axis.vert" />
     <None Include="Shaders\lightSource.frag" />
@@ -147,6 +149,8 @@
     <None Include="Shaders\modelOutlining.vert" />
     <None Include="Shaders\modelWithWholeMaterial.frag" />
     <None Include="Shaders\modelWithWholeMaterial.vert" />
+    <None Include="Shaders\planet.frag" />
+    <None Include="Shaders\planet.vert" />
     <None Include="Shaders\skybox.frag" />
     <None Include="Shaders\skybox.vert" />
     <None Include="Shaders\stars.frag" />

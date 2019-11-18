@@ -100,5 +100,17 @@
     <None Include="Shaders\modelOutlining.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Shaders\asteroid.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\asteroid.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\planet.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\planet.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

@@ -46,6 +46,7 @@ GLuint createAxisVAO(void);
 GLuint createCubeMapVAO(void);
 GLuint createCubeMapTexture(void);
 GLuint createStarsVAO(int* starsCount, int maxStars = 0);
+void createAsteroidVAO(int asteroidAmount, Model asteroidModel, glm::vec3 planetPos);
 
 //Coordinate systems
 glm::mat4 moveModel(Jumper jumper, bool outlining);
@@ -94,6 +95,14 @@ bool jumperOutlining = true;
 
 //stars
 int starsCount = 0;
+
+//planet
+glm::vec3 planetPos = glm::vec3(-400.0f, -150.0f, 120.0f);
+
+//asteroids
+unsigned int asteroidAmount = 100000;
+
+
 
 //Coordinate system matrix initialization
 glm::mat4 modelMatrix = glm::mat4(0);
@@ -145,6 +154,9 @@ int main(int argc, char* argv[]) {
 
 	glEnable(GL_PROGRAM_POINT_SIZE); //allows to modify the point size (used in stars)
 
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA); //allows some transparency
+	glEnable(GL_BLEND);
+
 	glEnable(GL_STENCIL_TEST);
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //do nothing if stencil and depth tests fail (keep values) but replace with 1's if succeed
 
@@ -165,6 +177,12 @@ int main(int argc, char* argv[]) {
 	Shader modelOutlining = Shader("Shaders/modelOutlining.vert", "Shaders/modelOutlining.frag");
 	modelOutlining.compile();
 
+	Shader planetShader = Shader("Shaders/planet.vert", "Shaders/planet.frag"); 
+	planetShader.compile();
+
+	Shader asteroidShader = Shader("Shaders/asteroid.vert", "Shaders/asteroid.frag");
+	asteroidShader.compile();
+
 	Shader starsShader = Shader("Shaders/stars.vert", "Shaders/stars.frag");
 	starsShader.compile();
 
@@ -181,9 +199,12 @@ int main(int argc, char* argv[]) {
 	GLuint skyboxVAO = createCubeMapVAO();
 	GLuint starsVAO = createStarsVAO(&starsCount);
 	//GLuint starsVAO = createStarsVAO(&starsCount, 100); //limit max number of stars to 100
-	//Model StargateModel = Model("Models/Stargate.obj");
+	Model StargateModel = Model("Models/untitled.obj"); //Stargate
 	Model JumperModel = Model("Models/jumper.obj");
 	Jumper jumper1 = Jumper(&JumperModel);
+	Model PlanetModel = Model("Models/planet.obj");
+	Model AsteroidModel = Model("Models/rock.obj");
+	createAsteroidVAO(asteroidAmount, AsteroidModel, planetPos); //no return value as there is one VAO per asteroid...
 
 	//lights
 	//pointer, pos, [color] OR [ambient, diffuse, specular,], [constant, linear, quadratic attenuation,] [spotlight direction, inner angle, outer angle,] size, VAO from other lights (0 if none already created)
@@ -294,9 +315,9 @@ int main(int argc, char* argv[]) {
 		glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 		
-		/*
+		
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
-		//model drawing
+		//stargate model drawing
 		stargateShader.use();
 		glActiveTexture(GL_TEXTURE15);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
@@ -318,12 +339,43 @@ int main(int argc, char* argv[]) {
 		}
 		StargateModel.Draw(stargateShader);
 		
-		*/
 
+		//Note: here the outlining will appear underneath the object drawn here -> kind of see through effect if needed !!!!
+
+		
+		//planet drawing
+		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
+		planetShader.use();
+		glm::mat4 model = glm::mat4(1.0f);
+		model = glm::translate(model, planetPos);
+		model = glm::scale(model, glm::vec3(8.0f, 8.0f, 8.0f));
+		planetShader.setMatrix4("model", model);
+		planetShader.setMatrix4("view", viewMatrix);
+		planetShader.setMatrix4("projection", projectionMatrix);
+		PlanetModel.Draw(planetShader);
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
 		glStencilMask(0xFF); // enable writing to the stencil buffer
-		//model drawing
+		
+
+		
+		// draw asteroides
+		asteroidShader.use();
+		asteroidShader.setMatrix4("view", viewMatrix);
+		asteroidShader.setMatrix4("projection", projectionMatrix);
+		asteroidShader.setInteger("texture_diffuse1", 0);
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, AsteroidModel.textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
+		for (unsigned int i = 0; i < AsteroidModel.meshes.size(); i++)
+		{
+			glBindVertexArray(AsteroidModel.meshes[i].VAO);
+			glDrawElementsInstanced(GL_TRIANGLES, AsteroidModel.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, asteroidAmount);
+			glBindVertexArray(0);
+		}
+		
+
+		
+		//jumper model drawing
 		jumperShader.use();
 		glActiveTexture(GL_TEXTURE15);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
@@ -345,24 +397,11 @@ int main(int argc, char* argv[]) {
 			(*lightArray[i]).setModelShaderLightParameters(jumperShader, i);
 		}
 		JumperModel.Draw(jumperShader);
-
-		//outlining of the jumper
-		if (jumperOutlining) {
-			glStencilMask(0xFF); // disable writing to the stencil buffer
-			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //only the parts not equal to 1 (e.i. the model itself) will be drawn so we don't overwrite the model itself
-			glStencilMask(0x00); // disable writing to the stencil buffer
-			glDisable(GL_DEPTH_TEST); //outline is always drawn above everything
-			modelOutlining.use();
-			modelOutlining.setMatrix4("model", moveModel(jumper1, true));
-			modelOutlining.setMatrix4("view", viewMatrix);
-			modelOutlining.setMatrix4("projection", projectionMatrix);
-			JumperModel.Draw(modelOutlining);
-			glStencilMask(0xFF);
-			glEnable(GL_DEPTH_TEST);
-		}
 		
-		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
+
+		
 		//Stars drawing
+		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 		glBindVertexArray(starsVAO);
 		starsShader.use();
 		starsShader.setMatrix4("MVP", MVPMatrix);
@@ -381,6 +420,21 @@ int main(int argc, char* argv[]) {
 		rotatingLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 		blueLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 
+		
+		//2nd render pass: outlining of the jumper
+		if (jumperOutlining) {
+			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //only the parts not equal to 1 (i.e. the model itself) will be drawn so we don't overwrite the model itself
+			glStencilMask(0x00); // disable writing to the stencil buffer
+			glDisable(GL_DEPTH_TEST); //outline is always drawn above everything
+			modelOutlining.use();
+			modelOutlining.setMatrix4("model", moveModel(jumper1, true));
+			modelOutlining.setMatrix4("view", viewMatrix);
+			modelOutlining.setMatrix4("projection", projectionMatrix);
+			JumperModel.Draw(modelOutlining);
+			glStencilMask(0xFF);
+			glEnable(GL_DEPTH_TEST);
+		}
+		
 		
 		// Flip Buffers and Draw
 		glfwSwapBuffers(mWindow);
