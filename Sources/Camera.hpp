@@ -23,7 +23,7 @@ const GLfloat YAW        =  0.0f;
 const GLfloat PITCH      =  0.0f;
 const GLfloat SPEED      =  12.0f;
 const GLfloat SENSITIVTY =  0.25f;
-const GLfloat FOV       =  75.0f;
+const GLfloat FOV       =  40.0f;
 
 
 // An abstract camera class that processes input and calculates the corresponding Eular Angles, Vectors and Matrices for use in OpenGL
@@ -112,12 +112,12 @@ public:
     // Processes input received from a mouse scroll-wheel event. Only requires input on the vertical wheel-axis
     void ProcessMouseScroll(GLfloat yoffset)
     {
-		if (this->Fov >= 70.0f && this->Fov <= 76.0f)
-            this->Fov -= yoffset /10 ;
-        if (this->Fov <= 70.0f)
-            this->Fov = 70.0f;
-        if (this->Fov >= 76.0f)
-            this->Fov = 76.0f;
+		if (this->Fov >= 25.0f && this->Fov <=90.0f)
+            this->Fov -= yoffset;
+        if (this->Fov <= 25.0f)
+            this->Fov = 25.0f;
+        if (this->Fov >= 90.0f)
+            this->Fov = 90.0f;
     }
 
 	void setInitialLookAt(glm::vec3 lookAtPos) {

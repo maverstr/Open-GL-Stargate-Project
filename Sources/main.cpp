@@ -587,7 +587,7 @@ glm::mat4 createProjectionMatrix(void) {
 	float aspectRatio = (float) windowWidth / (float) windowHeight;
 	float zNear = 0.1f;
 	float zFar = 10000.0f;
-	glm::mat4 projectionMat = glm::perspective(camera.Fov, aspectRatio, zNear, zFar);
+	glm::mat4 projectionMat = glm::perspective(glm::radians(- camera.Fov), aspectRatio, zNear, zFar);
 	return projectionMat;
 }
 
