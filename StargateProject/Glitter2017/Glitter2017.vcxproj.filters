@@ -112,5 +112,11 @@
     <None Include="Shaders\planet.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Shaders\sun.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\sun.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

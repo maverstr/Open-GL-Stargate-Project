@@ -17,6 +17,7 @@
 #include "Camera.hpp"
 #include "LightSource.h"
 #include "Jumper.hpp"
+using namespace std;
 
 //matrices
 #include <glm/gtc/matrix_transform.hpp>
@@ -25,8 +26,9 @@
 #include <irrklang/irrKlang.h>
 using namespace irrklang;
 ISoundEngine* SoundEngine = createIrrKlangDevice();
+bool musicBool = false;
 
-using namespace std;
+
 
 
 //////////////////////////////////////////
@@ -104,6 +106,9 @@ int starsCount = 0;
 //planet
 glm::vec3 planetPos = glm::vec3(-400.0f, -150.0f, 120.0f);
 
+//sun
+glm::vec3 sunPos = glm::vec3(-600.0f, -150.0f, -100.0f);
+
 //asteroids
 unsigned int asteroidAmount = 100000;
 
@@ -121,11 +126,12 @@ glm::mat4 MVPMatrix = glm::mat4(0);
 ////   MAIN MAIN MAIN MAIN MAIN MAIN   ///
 //////////////////////////////////////////
 int main(int argc, char* argv[]) {
-	//sound to loop during the whole game
-	ISound* music = SoundEngine->play2D("audio/MF-W-90.XM", true, false, true, ESM_AUTO_DETECT, true);
-	ISoundEffectControl* fx = music->getSoundEffectControl();
-	fx->enableWavesReverbSoundEffect(); //adds reverb effect
-
+	if (musicBool) {
+		//sound to loop during the whole game
+		ISound* music = SoundEngine->play2D("audio/MF-W-90.XM", true, false, true, ESM_AUTO_DETECT, true);
+		ISoundEffectControl* fx = music->getSoundEffectControl();
+		fx->enableWavesReverbSoundEffect(); //adds reverb effect
+	}
 	// Load GLFW and Create a Window
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -190,6 +196,9 @@ int main(int argc, char* argv[]) {
 	Shader planetShader = Shader("Shaders/planet.vert", "Shaders/planet.frag"); 
 	planetShader.compile();
 
+	Shader sunShader = Shader("Shaders/sun.vert", "Shaders/sun.frag");
+	sunShader.compile();
+
 	Shader asteroidShader = Shader("Shaders/asteroid.vert", "Shaders/asteroid.frag");
 	asteroidShader.compile();
 
@@ -201,7 +210,6 @@ int main(int argc, char* argv[]) {
 
 	//Textures
 	GLuint skyboxTexture = createCubeMapTexture();
-	stargateShader.use();
 	GLuint jumperReflectionMap = loadTexture("Models/reflectionMapJumper.png");
 
 	//VAO instanciation
@@ -210,24 +218,28 @@ int main(int argc, char* argv[]) {
 	GLuint starsVAO = createStarsVAO(&starsCount);
 	//GLuint starsVAO = createStarsVAO(&starsCount, 100); //limit max number of stars to 100
 	Model StargateModel = Model("Models/untitled.obj"); //Stargate
-	Model JumperModel = Model("Models/jumper.obj");
+	Model JumperModel = Model("Models/Jumper.obj");
 	Jumper jumper1 = Jumper(&JumperModel);
 	Model PlanetModel = Model("Models/planet.obj");
 	Model AsteroidModel = Model("Models/rock.obj");
 	createAsteroidVAO(asteroidAmount, AsteroidModel, planetPos); //no return value as there is one VAO per asteroid...
+	Model SunModel = Model("Models/Sun.obj");
 
 	//lights
 	//pointer, pos, [color] OR [ambient, diffuse, specular,], [constant, linear, quadratic attenuation,] [spotlight direction, inner angle, outer angle,] size, VAO from other lights (0 if none already created)
 	LightSource rotatingLight = LightSource(&lightCounter, POINTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.082f, 0.0019f, 0.5f, 0);
 	lightArray.push_back(&rotatingLight);
 	GLuint lightVAO = rotatingLight.getVAO();
+	
 	LightSource blueLight = LightSource(&lightCounter, POINTLIGHT, glm::vec3(8.0f, 4.0f, 2.0f), glm::vec3(0.0f,0.3f,0.3f), 1.0f, 0.022f, 0.0019f, 0.5f, lightVAO);
 	lightArray.push_back(&blueLight);
 	LightSource flashLight = LightSource(&lightCounter, SPOTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.022f, 0.0019f, camera.Front, 4.5f, 6.5f, 0.5f, 0);
 	lightArray.push_back(&flashLight);
 	LightSource jumperFlashLight = LightSource(&lightCounter, SPOTLIGHT, jumper1.Position + flashlightJumperOffset, glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.022f, 0.0019f, glm::vec3(0.0f,0.0f,1.0f), 8.5f, 12.5f, 0.2f, 0);
 	lightArray.push_back(&jumperFlashLight);
-
+	
+	LightSource sunLight = LightSource(&lightCounter, POINTLIGHT, sunPos, glm::vec3(1.0f, 0.6f, 0.2f)*1.0f, 1.0f, 0.00080f, 0.0000070f, 1.0f, lightVAO);
+	lightArray.push_back(&sunLight);
 
 	//camera initial look at position
 	camera.setInitialLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -352,22 +364,34 @@ int main(int argc, char* argv[]) {
 
 		//Note: here the outlining will appear underneath the object drawn here -> kind of see through effect if needed !!!!
 
-		
+		//sun drawing
+		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
+		sunShader.use();
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, sunPos);
+		modelMatrix = glm::scale(modelMatrix, glm::vec3(20.0f, 20.0f, 20.0f));
+		sunShader.setMatrix4("model", modelMatrix);
+		sunShader.setMatrix4("view", viewMatrix);
+		sunShader.setMatrix4("projection", projectionMatrix);
+		SunModel.Draw(sunShader);
+		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
+		glStencilMask(0xFF); // enable writing to the stencil buffer
+
+
 		//planet drawing
 		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 		planetShader.use();
-		glm::mat4 model = glm::mat4(1.0f);
-		model = glm::translate(model, planetPos);
-		model = glm::scale(model, glm::vec3(8.0f, 8.0f, 8.0f));
-		planetShader.setMatrix4("model", model);
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, planetPos);
+		modelMatrix = glm::scale(modelMatrix, glm::vec3(8.0f, 8.0f, 8.0f));
+		planetShader.setMatrix4("model", modelMatrix);
 		planetShader.setMatrix4("view", viewMatrix);
 		planetShader.setMatrix4("projection", projectionMatrix);
 		PlanetModel.Draw(planetShader);
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
 		glStencilMask(0xFF); // enable writing to the stencil buffer
-		
-
 		
 		// draw asteroides
 		asteroidShader.use();
@@ -384,7 +408,6 @@ int main(int argc, char* argv[]) {
 		}
 		
 
-		
 		//jumper model drawing
 		jumperShader.use();
 		glActiveTexture(GL_TEXTURE15);
@@ -419,16 +442,20 @@ int main(int argc, char* argv[]) {
 		glBindVertexArray(0);
 		
 		//light drawing
+		modelMatrix = createModelMatrix();
 		lightShader.use();
+		
 		flashLight.updateFlashLightDirection(camera.Front);
 		flashLight.updatePosition(camera.Position);
 		jumperFlashLight.updateFlashLightDirection(jumper1.Front);
 		jumperFlashLight.updatePosition(jumper1.Position + glm::vec3(jumper1.Right * flashlightJumperOffset.x) + glm::vec3(jumper1.Up * flashlightJumperOffset.y) + glm::vec3(jumper1.Front * flashlightJumperOffset.z));
 		jumperFlashLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-
+		blueLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
+		
 		rotatingLight.updatePosition(glm::vec3(sin(glfwGetTime() * 0.6f) * 10.0f, cos(glfwGetTime() * 0.3f) * 7.0f, sin(glfwGetTime()) * 8.0f));
 		rotatingLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-		blueLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
+		sunLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
+
 
 		
 		//2nd render pass: outlining of the jumper

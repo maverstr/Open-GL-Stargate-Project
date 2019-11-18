@@ -42,7 +42,6 @@ struct Light {
 in vec3 Normal;  
 in vec3 FragPos;  
 in vec2 TexCoords;
-in vec3 NormalEnvMapping;
 in vec3 Position;
 
 uniform vec3 objectColor;
@@ -63,9 +62,8 @@ void main()
 {//Using a function to calculate the lighting for each light source
     // vectors normalization
     vec3 norm = normalize(Normal);
-	vec3 normalEnvMapping = normalize(NormalEnvMapping);
     vec3 viewDir = normalize(viewPos - FragPos);
-	vec3 ViewDirEnvMapping = normalize(Position - viewPos);
+	vec3 ViewDirEnvMapping = normalize(FragPos - viewPos);
 	vec3 result = vec3(0.0f, 0.0f, 0.0f); //default
     
 	for (int i = 0; i < min(NR_POINT_LIGHTS, lightCounter); i++){
@@ -74,9 +72,8 @@ void main()
 	result += calcEmission();
 
 	//environment mapping
-	result += calcReflection(normalEnvMapping, ViewDirEnvMapping) *3.0f;
-	//result += calcRefraction(normalEnvMapping, ViewDirEnvMapping, material.refractionRatio);
-
+	result += calcReflection(norm, ViewDirEnvMapping) *3.0f;
+	//result += calcRefraction(norm, ViewDirEnvMapping, material.refractionRatio);
     FragColor = vec4(result, 1.0);
 }
 
@@ -96,10 +93,10 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 	// diffuse 
 	vec3 lightDir = vec3(0.0f,0.0f,0.0f); //default value
 	
-	if(light.position.w == 1.0){ //if light is a point light
+	if(light.position.w == 1.0f){ //if light is a point light
 		lightDir = normalize(light.position.xyz - FragPos);
 	}
-	else if(light.position.w == 0.0){ //if light is directional (no impact from translations)
+	else if(light.position.w == 0.0f){ //if light is directional (no impact from translations)
 		lightDir = normalize(-light.position.xyz);
 	}
 	float diff = max(dot(norm, lightDir), 0.0);
