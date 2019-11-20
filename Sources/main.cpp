@@ -99,6 +99,10 @@ int lightCounter = 0;
 glm::vec3 flashlightJumperOffset = glm::vec3(0.0f, -1.27f, 5.5f);
 glm::vec3 jumperFirstPersonOffset = glm::vec3(0.0f, 0.0f, 5.5f);
 bool jumperOutlining = true;
+float timeOfExplosion = 0.0f;
+float explosionDistance = 0;
+float maxExplosionDistance = -1;
+bool isExploded = false;
 
 //stars
 int starsCount = 0;
@@ -126,12 +130,12 @@ glm::mat4 MVPMatrix = glm::mat4(0);
 ////   MAIN MAIN MAIN MAIN MAIN MAIN   ///
 //////////////////////////////////////////
 int main(int argc, char* argv[]) {
-	if (musicBool) {
-		//sound to loop during the whole game
-		ISound* music = SoundEngine->play2D("audio/MF-W-90.XM", true, false, true, ESM_AUTO_DETECT, true);
-		ISoundEffectControl* fx = music->getSoundEffectControl();
-		fx->enableWavesReverbSoundEffect(); //adds reverb effect
-	}
+	//sound to loop during the whole game
+	ISound* music = SoundEngine->play2D("audio/MF-W-90.XM", true, false, true, ESM_AUTO_DETECT, true);
+	ISoundEffectControl* fx = music->getSoundEffectControl();
+	fx->enableWavesReverbSoundEffect(); //adds reverb effect
+	music->setIsPaused(true);
+
 	// Load GLFW and Create a Window
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -187,7 +191,7 @@ int main(int argc, char* argv[]) {
 	//Shader modelShader = Shader("Shaders/modelWithWholeMaterial.vert", "Shaders/modelWithWholeMaterial.frag");
 	stargateShader.compile();
 
-	Shader jumperShader = Shader("Shaders/model.vert", "Shaders/model.frag");
+	Shader jumperShader = Shader("Shaders/model.vert", "Shaders/model.frag", "Shaders/model.geom");
 	jumperShader.compile();
 
 	Shader modelOutlining = Shader("Shaders/modelOutlining.vert", "Shaders/modelOutlining.frag");
@@ -250,6 +254,13 @@ int main(int argc, char* argv[]) {
 		float currentFrame = glfwGetTime();
 		deltaTime = currentFrame - lastFrame;
 		lastFrame = currentFrame;
+
+		//audio
+		if (musicBool) {
+			music->setIsPaused(!music->getIsPaused());
+			musicBool = false;
+		}
+
 
 		//Handle movements
 		jumper1.clearMovement();
@@ -399,7 +410,7 @@ int main(int argc, char* argv[]) {
 		asteroidShader.setMatrix4("projection", projectionMatrix);
 		asteroidShader.setInteger("texture_diffuse1", 0);
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, AsteroidModel.textures_loaded[0].id); // note: we also made the textures_loaded vector public (instead of private) from the model class.
+		glBindTexture(GL_TEXTURE_2D, AsteroidModel.textures_loaded[0].id);
 		for (unsigned int i = 0; i < AsteroidModel.meshes.size(); i++)
 		{
 			glBindVertexArray(AsteroidModel.meshes[i].VAO);
@@ -415,6 +426,16 @@ int main(int argc, char* argv[]) {
 		jumperShader.setInteger("skybox", 15);
 		glActiveTexture(GL_TEXTURE14);
 		glBindTexture(GL_TEXTURE_2D, jumperReflectionMap);
+		if (isExploded) {
+			explosionDistance = sin(((glfwGetTime() - timeOfExplosion)*2 - 1) / 3.0f); //center the range and slow down the animation
+			if (explosionDistance > 0.99f) {
+				maxExplosionDistance = 1;
+			}
+			jumperShader.setFloat("explosionDistance", max(maxExplosionDistance, explosionDistance));
+		}
+		else {
+			jumperShader.setFloat("explosionDistance", -1);
+		}
 		jumperShader.setInteger("material.texure_reflectionMap", 14);
 		jumperShader.setFloat("refractionRatio", 0.0f);
 		jumperShader.setInteger("material.reflection", 1);
@@ -863,6 +884,22 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 	//jumper outlining
 	if (keys[GLFW_KEY_O])
 		jumperOutlining = !jumperOutlining;
+
+	//jumper explosion
+	if (keys[GLFW_KEY_K]) {
+		if (isExploded) {
+			isExploded = false; //cancels the explosion
+		}
+		else {
+			isExploded = true;
+			timeOfExplosion = glfwGetTime();
+			maxExplosionDistance = -1; //resets to sin(-90)
+		}
+	}
+
+	//sound
+	if (keys[GLFW_KEY_COMMA])
+		musicBool = true;
 
 	//Wireframe or point mode 
 	if (keys[GLFW_KEY_1] || keys[GLFW_KEY_KP_1])

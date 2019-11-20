@@ -144,6 +144,7 @@
     <None Include="Shaders\lightSource.frag" />
     <None Include="Shaders\lightSource.vert" />
     <None Include="Shaders\model.frag" />
+    <None Include="Shaders\model.geom" />
     <None Include="Shaders\model.vert" />
     <None Include="Shaders\modelOutlining.frag" />
     <None Include="Shaders\modelOutlining.vert" />

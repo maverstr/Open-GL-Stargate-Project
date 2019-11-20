@@ -118,5 +118,8 @@
     <None Include="Shaders\sun.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Shaders\model.geom">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

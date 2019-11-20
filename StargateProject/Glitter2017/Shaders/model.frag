@@ -42,7 +42,6 @@ struct Light {
 in vec3 Normal;  
 in vec3 FragPos;  
 in vec2 TexCoords;
-in vec3 Position;
 
 uniform vec3 objectColor;
 uniform vec3 viewPos;
@@ -120,6 +119,7 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 
 	////////////////////////////RESULT////////////////////////////////////
 	vec3 result = (ambient + diffuse + specular) * attenuation;
+	result = diffuse;
 	return result;
 }
 
