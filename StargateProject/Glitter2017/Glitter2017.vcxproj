@@ -158,6 +158,8 @@
     <None Include="Shaders\stars.vert" />
     <None Include="Shaders\sun.frag" />
     <None Include="Shaders\sun.vert" />
+    <None Include="Shaders\sun2.frag" />
+    <None Include="Shaders\sun2.vert" />
     <None Include="Shaders\triangle.frag" />
     <None Include="Shaders\triangle.vert" />
   </ItemGroup>

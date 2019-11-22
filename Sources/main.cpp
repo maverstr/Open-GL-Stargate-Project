@@ -55,6 +55,8 @@ GLuint createCubeMapTexture(void);
 GLuint createStarsVAO(int* starsCount, int maxStars = 0);
 void createAsteroidVAO(int asteroidAmount, Model asteroidModel, glm::vec3 planetPos);
 
+GLuint createSunPointVAO();
+
 //Coordinate systems
 glm::mat4 moveModel(Jumper jumper, bool outlining);
 glm::mat4 createProjectionMatrix(void);
@@ -229,6 +231,11 @@ int main(int argc, char* argv[]) {
 	createAsteroidVAO(asteroidAmount, AsteroidModel, planetPos); //no return value as there is one VAO per asteroid...
 	Model SunModel = Model("Models/Sun.obj");
 
+	GLuint sunPointVAO = createSunPointVAO();
+	GLuint sunTexture = loadTexture("Models/2k_sun.jpg");
+	Shader sunTestShader = Shader("Shaders/sun2.vert", "Shaders/sun2.frag");
+
+
 	//lights
 	//pointer, pos, [color] OR [ambient, diffuse, specular,], [constant, linear, quadratic attenuation,] [spotlight direction, inner angle, outer angle,] size, VAO from other lights (0 if none already created)
 	LightSource rotatingLight = LightSource(&lightCounter, POINTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.082f, 0.0019f, 0.5f, 0);
@@ -376,7 +383,7 @@ int main(int argc, char* argv[]) {
 		*/
 
 		//Note: here the outlining will appear underneath the object drawn here -> kind of see through effect if needed !!!!
-
+		/*
 		//sun drawing
 		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 		sunShader.use();
@@ -494,8 +501,21 @@ int main(int argc, char* argv[]) {
 			glStencilMask(0xFF);
 			glEnable(GL_DEPTH_TEST);
 		}
-		
-		
+		*/
+
+		glBindVertexArray(sunPointVAO);
+		sunTestShader.use();
+		//glActiveTexture(GL_TEXTURE0);
+		//glBindTexture(GL_TEXTURE_2D, sunTexture);
+		//sunTestShader.setInteger("texture_diffuse1", 0);
+		modelMatrix = glm::mat4(1.0f);
+		sunTestShader.setMatrix4("model", modelMatrix);
+		sunTestShader.setMatrix4("view", viewMatrix);
+		sunTestShader.setMatrix4("projection", projectionMatrix);
+
+		glDrawArrays(GL_POINT, 0, 1);
+		glBindVertexArray(0);
+
 		// Flip Buffers and Draw
 		glfwSwapBuffers(mWindow);
 		glfwPollEvents();
@@ -563,6 +583,23 @@ GLuint createCubeMapTexture(void) {
 	}
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	return texture;
+}
+
+GLuint createSunPointVAO(void) {
+	GLfloat vertex[] = {
+		0.0f, 0.0f, 0.0f
+	};
+
+	GLuint VBO, VAO;
+	glGenVertexArrays(1, &VAO);
+	glBindVertexArray(VAO);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0); //position
+	glEnableVertexAttribArray(0);
+	glBindVertexArray(0);
+	return VAO;
 }
 
 

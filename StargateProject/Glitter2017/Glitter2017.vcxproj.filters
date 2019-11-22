@@ -121,5 +121,11 @@
     <None Include="Shaders\model.geom">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Shaders\sun2.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\sun2.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>
