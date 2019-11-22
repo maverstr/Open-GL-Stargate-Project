@@ -114,7 +114,7 @@ glm::vec3 planetPos = glm::vec3(-400.0f, -150.0f, 120.0f);
 glm::vec3 sunPos = glm::vec3(-600.0f, -150.0f, -100.0f);
 
 //asteroids
-unsigned int asteroidAmount = 100000;
+unsigned int asteroidAmount = 1000;
 
 
 
@@ -221,7 +221,7 @@ int main(int argc, char* argv[]) {
 	GLuint skyboxVAO = createCubeMapVAO();
 	GLuint starsVAO = createStarsVAO(&starsCount);
 	//GLuint starsVAO = createStarsVAO(&starsCount, 100); //limit max number of stars to 100
-	Model StargateModel = Model("Models/untitled.obj"); //Stargate
+	//Model StargateModel = Model("Models/untitled.obj"); //Stargate
 	Model JumperModel = Model("Models/Jumper.obj");
 	Jumper jumper1 = Jumper(&JumperModel);
 	Model PlanetModel = Model("Models/planet.obj");
@@ -264,32 +264,33 @@ int main(int argc, char* argv[]) {
 
 		//Handle movements
 		jumper1.clearMovement();
-		if (translationMovement[0])
-			jumper1.ProcessKeyboard(FORWARD, deltaTime);
-		if (translationMovement[1])
-			jumper1.ProcessKeyboard(BACKWARD, deltaTime);
-		if (translationMovement[2])
-			jumper1.ProcessKeyboard(LEFT, deltaTime);
-		if (translationMovement[3])
-			jumper1.ProcessKeyboard(RIGHT, deltaTime);
-		if (translationMovement[4])
-			jumper1.ProcessKeyboard(UP, deltaTime);
-		if (translationMovement[5])
-			jumper1.ProcessKeyboard(DOWN, deltaTime);
+		if (!isExploded) { //removes the ability to move if exploded
+			if (translationMovement[0])
+				jumper1.ProcessKeyboard(FORWARD, deltaTime);
+			if (translationMovement[1])
+				jumper1.ProcessKeyboard(BACKWARD, deltaTime);
+			if (translationMovement[2])
+				jumper1.ProcessKeyboard(LEFT, deltaTime);
+			if (translationMovement[3])
+				jumper1.ProcessKeyboard(RIGHT, deltaTime);
+			if (translationMovement[4])
+				jumper1.ProcessKeyboard(UP, deltaTime);
+			if (translationMovement[5])
+				jumper1.ProcessKeyboard(DOWN, deltaTime);
 
-		if (rotationMovement[0])
-			jumper1.ProcessKeyboard(PITCH_UP, deltaTime);
-		if (rotationMovement[1])
-			jumper1.ProcessKeyboard(PITCH_DOWN, deltaTime);
-		if (rotationMovement[2])
-			jumper1.ProcessKeyboard(ROLL_LEFT, deltaTime);
-		if (rotationMovement[3])
-			jumper1.ProcessKeyboard(ROLL_RIGHT, deltaTime);
-		if (rotationMovement[4])
-			jumper1.ProcessKeyboard(YAW_LEFT, deltaTime);
-		if (rotationMovement[5])
-			jumper1.ProcessKeyboard(YAW_RIGHT, deltaTime);
-
+			if (rotationMovement[0])
+				jumper1.ProcessKeyboard(PITCH_UP, deltaTime);
+			if (rotationMovement[1])
+				jumper1.ProcessKeyboard(PITCH_DOWN, deltaTime);
+			if (rotationMovement[2])
+				jumper1.ProcessKeyboard(ROLL_LEFT, deltaTime);
+			if (rotationMovement[3])
+				jumper1.ProcessKeyboard(ROLL_RIGHT, deltaTime);
+			if (rotationMovement[4])
+				jumper1.ProcessKeyboard(YAW_LEFT, deltaTime);
+			if (rotationMovement[5])
+				jumper1.ProcessKeyboard(YAW_RIGHT, deltaTime);
+		}
 		if (cameraMovement[0])
 			camera.ProcessKeyboard(CAM_FORWARD, deltaTime);
 		if (cameraMovement[1])
@@ -349,7 +350,7 @@ int main(int argc, char* argv[]) {
 		glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 	
-		
+		/*
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		//stargate model drawing
 		stargateShader.use();
@@ -372,7 +373,7 @@ int main(int argc, char* argv[]) {
 			(*lightArray[i]).setModelShaderLightParameters(stargateShader, i);
 		}
 		StargateModel.Draw(stargateShader);
-		
+		*/
 
 		//Note: here the outlining will appear underneath the object drawn here -> kind of see through effect if needed !!!!
 

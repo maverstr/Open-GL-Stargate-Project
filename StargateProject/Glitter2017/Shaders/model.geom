@@ -19,6 +19,7 @@ out vec2 TexCoords;
 out vec3 FragPos;
 out vec3 Normal;
 out vec3 NormalInMVP;
+out vec3 test;
 
 /*
 //simple pass-through geom shader for testing...
@@ -53,27 +54,35 @@ vec4 explode(vec4 position, vec3 normal)
     vec3 direction = normal * ((explosionDistance + 1.0) / 2.0) * magnitude; 
 	return position + vec4(direction,0.0f);
 }
+/*
+vec3 testFct(vec3 normal){
+    float magnitude = 5.0;
+    vec3 direction = normal * ((explosionDistance + 1.0) / 2.0) * magnitude; 
+	return direction;
+}
+*/
 
-void main() {    
-    vec3 normal = gs_in[0].NormalInMVP;
-
-    gl_Position = explode(gl_in[0].gl_Position, normal);
+void main() {
+    gl_Position = explode(gl_in[0].gl_Position, gs_in[0].NormalInMVP);
 	TexCoords = gs_in[0].TexCoords;
 	FragPos = gs_in[0].FragPos;
 	Normal = gs_in[0].Normal;
 	NormalInMVP = gs_in[0].NormalInMVP;
+	//test = testFct(gs_in[0].NormalInMVP);
     EmitVertex();
-    gl_Position = explode(gl_in[1].gl_Position, normal);
+    gl_Position = explode(gl_in[1].gl_Position, gs_in[1].NormalInMVP);
 	TexCoords = gs_in[1].TexCoords;
 	FragPos = gs_in[1].FragPos;
 	Normal = gs_in[1].Normal;
 	NormalInMVP = gs_in[1].NormalInMVP;
+	//test = testFct(gs_in[1].NormalInMVP);
     EmitVertex();
-    gl_Position = explode(gl_in[2].gl_Position, normal);
+    gl_Position = explode(gl_in[2].gl_Position, gs_in[2].NormalInMVP);
 	TexCoords = gs_in[2].TexCoords;
 	FragPos = gs_in[2].FragPos;
 	Normal = gs_in[2].Normal;
 	NormalInMVP = gs_in[2].NormalInMVP;
+	//test = testFct(gs_in[2].NormalInMVP);
     EmitVertex();
     EndPrimitive();
 }

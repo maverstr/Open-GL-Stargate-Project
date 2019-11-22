@@ -42,7 +42,7 @@ struct Light {
 in vec3 Normal;  
 in vec3 FragPos;  
 in vec2 TexCoords;
-in vec3 NormalInMVP;
+in vec3 test;
 
 uniform vec3 objectColor;
 uniform vec3 viewPos;
@@ -75,6 +75,7 @@ void main()
 	result += calcReflection(norm, ViewDirEnvMapping) *3.0f;
 	//result += calcRefraction(norm, ViewDirEnvMapping, material.refractionRatio);
     FragColor = vec4(result, 1.0);
+	//FragColor = vec4(test,1.0f); debug purpose
 }
 
 
