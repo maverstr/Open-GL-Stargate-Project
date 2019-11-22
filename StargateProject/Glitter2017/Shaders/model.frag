@@ -42,6 +42,7 @@ struct Light {
 in vec3 Normal;  
 in vec3 FragPos;  
 in vec2 TexCoords;
+in vec3 NormalInMVP;
 
 uniform vec3 objectColor;
 uniform vec3 viewPos;

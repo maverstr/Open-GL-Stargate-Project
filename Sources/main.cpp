@@ -187,7 +187,7 @@ int main(int argc, char* argv[]) {
 	Shader skyboxShader = Shader("Shaders/skybox.vert", "Shaders/skybox.frag");
 	skyboxShader.compile();
 
-	Shader stargateShader = Shader("Shaders/model.vert", "Shaders/model.frag");
+	Shader stargateShader = Shader("Shaders/model.vert", "Shaders/model.frag", "Shaders/model.geom");
 	//Shader modelShader = Shader("Shaders/modelWithWholeMaterial.vert", "Shaders/modelWithWholeMaterial.frag");
 	stargateShader.compile();
 
@@ -312,7 +312,8 @@ int main(int argc, char* argv[]) {
 
 		//	camera.updatePositionFPSView(jumper1.Position + +glm::vec3(jumper1.Right * jumperFirstPersonOffset.x) + glm::vec3(jumper1.Up * jumperFirstPersonOffset.y) + glm::vec3(jumper1.Front * jumperFirstPersonOffset.z), - jumper1.Front);
 
-		//showFPS();
+		showFPS();
+
 		//Calculate coordinate systems every frame
 		modelMatrix = createModelMatrix();
 		viewMatrix = createViewMatrix();
@@ -347,7 +348,7 @@ int main(int argc, char* argv[]) {
 		axisShader.setMatrix4("MVP", MVPMatrix);
 		glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
-		
+	
 		
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		//stargate model drawing

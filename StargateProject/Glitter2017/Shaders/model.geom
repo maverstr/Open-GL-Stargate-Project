@@ -61,16 +61,19 @@ void main() {
 	TexCoords = gs_in[0].TexCoords;
 	FragPos = gs_in[0].FragPos;
 	Normal = gs_in[0].Normal;
+	NormalInMVP = gs_in[0].NormalInMVP;
     EmitVertex();
     gl_Position = explode(gl_in[1].gl_Position, normal);
 	TexCoords = gs_in[1].TexCoords;
 	FragPos = gs_in[1].FragPos;
 	Normal = gs_in[1].Normal;
+	NormalInMVP = gs_in[1].NormalInMVP;
     EmitVertex();
     gl_Position = explode(gl_in[2].gl_Position, normal);
 	TexCoords = gs_in[2].TexCoords;
 	FragPos = gs_in[2].FragPos;
 	Normal = gs_in[2].Normal;
+	NormalInMVP = gs_in[2].NormalInMVP;
     EmitVertex();
     EndPrimitive();
 }
