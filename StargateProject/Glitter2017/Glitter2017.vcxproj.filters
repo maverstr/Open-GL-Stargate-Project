@@ -88,12 +88,6 @@
     <None Include="Shaders\model.vert">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Shaders\modelWithWholeMaterial.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\modelWithWholeMaterial.vert">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="Shaders\modelOutlining.frag">
       <Filter>Resource Files</Filter>
     </None>
@@ -119,12 +113,6 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Shaders\model.geom">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\sun2.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\sun2.vert">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

@@ -55,7 +55,6 @@ GLuint createCubeMapTexture(void);
 GLuint createStarsVAO(int* starsCount, int maxStars = 0);
 void createAsteroidVAO(int asteroidAmount, Model asteroidModel, glm::vec3 planetPos);
 
-GLuint createSunPointVAO();
 
 //Coordinate systems
 glm::mat4 moveModel(Jumper jumper, bool outlining);
@@ -113,10 +112,10 @@ int starsCount = 0;
 glm::vec3 planetPos = glm::vec3(-400.0f, -150.0f, 120.0f);
 
 //sun
-glm::vec3 sunPos = glm::vec3(-600.0f, -150.0f, -100.0f);
+glm::vec3 sunPos = glm::vec3(-200.0f, -150.0f, -100.0f);;
 
 //asteroids
-unsigned int asteroidAmount = 1000;
+unsigned int asteroidAmount = 100000;
 
 
 
@@ -214,16 +213,18 @@ int main(int argc, char* argv[]) {
 	Shader lightShader = Shader("Shaders/lightSource.vert", "Shaders/lightSource.frag");
 	lightShader.compile();
 
+
 	//Textures
 	GLuint skyboxTexture = createCubeMapTexture();
 	GLuint jumperReflectionMap = loadTexture("Models/reflectionMapJumper.png");
+	GLuint sunTexture = loadTexture("Models/2k_sun.jpg");
 
 	//VAO instanciation
 	GLuint AxisVAO = createAxisVAO();
 	GLuint skyboxVAO = createCubeMapVAO();
 	GLuint starsVAO = createStarsVAO(&starsCount);
 	//GLuint starsVAO = createStarsVAO(&starsCount, 100); //limit max number of stars to 100
-	//Model StargateModel = Model("Models/untitled.obj"); //Stargate
+	Model StargateModel = Model("Models/Stargate.obj"); //Stargate
 	Model JumperModel = Model("Models/Jumper.obj");
 	Jumper jumper1 = Jumper(&JumperModel);
 	Model PlanetModel = Model("Models/planet.obj");
@@ -231,9 +232,7 @@ int main(int argc, char* argv[]) {
 	createAsteroidVAO(asteroidAmount, AsteroidModel, planetPos); //no return value as there is one VAO per asteroid...
 	Model SunModel = Model("Models/Sun.obj");
 
-	GLuint sunPointVAO = createSunPointVAO();
-	GLuint sunTexture = loadTexture("Models/2k_sun.jpg");
-	Shader sunTestShader = Shader("Shaders/sun2.vert", "Shaders/sun2.frag");
+
 
 
 	//lights
@@ -357,7 +356,6 @@ int main(int argc, char* argv[]) {
 		glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
 	
-		/*
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		//stargate model drawing
 		stargateShader.use();
@@ -373,6 +371,7 @@ int main(int argc, char* argv[]) {
 		stargateShader.setVector3f("objectColor", 1.0f, 0.5f, 0.0f);
 		stargateShader.setVector3f("viewPos", camera.Position);
 		stargateShader.setFloat("material.shininess", 32.0f);
+		stargateShader.setFloat("explosionDistance", -1);
 
 		stargateShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
 		
@@ -380,19 +379,27 @@ int main(int argc, char* argv[]) {
 			(*lightArray[i]).setModelShaderLightParameters(stargateShader, i);
 		}
 		StargateModel.Draw(stargateShader);
-		*/
 
 		//Note: here the outlining will appear underneath the object drawn here -> kind of see through effect if needed !!!!
-		/*
-		//sun drawing
+		
+
 		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 		sunShader.use();
 		modelMatrix = glm::mat4(1.0f);
 		modelMatrix = glm::translate(modelMatrix, sunPos);
-		modelMatrix = glm::scale(modelMatrix, glm::vec3(20.0f, 20.0f, 20.0f));
+		float scale = 20.0f;
+		modelMatrix = glm::scale(modelMatrix, glm::vec3(scale));
 		sunShader.setMatrix4("model", modelMatrix);
 		sunShader.setMatrix4("view", viewMatrix);
 		sunShader.setMatrix4("projection", projectionMatrix);
+		sunShader.setVector3f("sunPos", sunPos);
+		sunShader.setFloat("time", glfwGetTime()/10);
+		sunShader.setFloat("random", ((sin(glfwGetTime()) + 1.0) / 6.0) + 0.4);
+		glm::vec3 dist = sunPos - camera.Position;
+		float distance = sqrt(pow(dist.x, 2) + pow(dist.y, 2) + pow(dist.z, 2));
+		float angle = 2 * tan((1.0f*scale)/ distance);
+		sunShader.setFloat("cameraFov", camera.Fov);
+		sunShader.setFloat("angle", glm::degrees(angle));
 		SunModel.Draw(sunShader);
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
@@ -501,20 +508,7 @@ int main(int argc, char* argv[]) {
 			glStencilMask(0xFF);
 			glEnable(GL_DEPTH_TEST);
 		}
-		*/
 
-		glBindVertexArray(sunPointVAO);
-		sunTestShader.use();
-		//glActiveTexture(GL_TEXTURE0);
-		//glBindTexture(GL_TEXTURE_2D, sunTexture);
-		//sunTestShader.setInteger("texture_diffuse1", 0);
-		modelMatrix = glm::mat4(1.0f);
-		sunTestShader.setMatrix4("model", modelMatrix);
-		sunTestShader.setMatrix4("view", viewMatrix);
-		sunTestShader.setMatrix4("projection", projectionMatrix);
-
-		glDrawArrays(GL_POINT, 0, 1);
-		glBindVertexArray(0);
 
 		// Flip Buffers and Draw
 		glfwSwapBuffers(mWindow);
@@ -585,22 +579,6 @@ GLuint createCubeMapTexture(void) {
 	return texture;
 }
 
-GLuint createSunPointVAO(void) {
-	GLfloat vertex[] = {
-		0.0f, 0.0f, 0.0f
-	};
-
-	GLuint VBO, VAO;
-	glGenVertexArrays(1, &VAO);
-	glBindVertexArray(VAO);
-	glGenBuffers(1, &VBO);
-	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(vertex), vertex, GL_STATIC_DRAW);
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0); //position
-	glEnableVertexAttribArray(0);
-	glBindVertexArray(0);
-	return VAO;
-}
 
 
 GLuint createCubeMapVAO(void) {

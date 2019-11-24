@@ -148,8 +148,6 @@
     <None Include="Shaders\model.vert" />
     <None Include="Shaders\modelOutlining.frag" />
     <None Include="Shaders\modelOutlining.vert" />
-    <None Include="Shaders\modelWithWholeMaterial.frag" />
-    <None Include="Shaders\modelWithWholeMaterial.vert" />
     <None Include="Shaders\planet.frag" />
     <None Include="Shaders\planet.vert" />
     <None Include="Shaders\skybox.frag" />
@@ -158,8 +156,6 @@
     <None Include="Shaders\stars.vert" />
     <None Include="Shaders\sun.frag" />
     <None Include="Shaders\sun.vert" />
-    <None Include="Shaders\sun2.frag" />
-    <None Include="Shaders\sun2.vert" />
     <None Include="Shaders\triangle.frag" />
     <None Include="Shaders\triangle.vert" />
   </ItemGroup>
