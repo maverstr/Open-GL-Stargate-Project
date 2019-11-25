@@ -12,3 +12,5 @@ The drawing is done using instances to increase performance !!!
 - reflection map (for metallic effect of the ship) using reflection mapping
 - outlining of the model using stencil buffer
 - (background music)
+- complex shader for the sun !
+- explosion effect using the normals and geometry shader

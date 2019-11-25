@@ -115,7 +115,7 @@ glm::vec3 planetPos = glm::vec3(-400.0f, -150.0f, 120.0f);
 glm::vec3 sunPos = glm::vec3(-200.0f, -150.0f, -100.0f);;
 
 //asteroids
-unsigned int asteroidAmount = 100000;
+unsigned int asteroidAmount = 10000;
 
 
 
@@ -387,19 +387,19 @@ int main(int argc, char* argv[]) {
 		sunShader.use();
 		modelMatrix = glm::mat4(1.0f);
 		modelMatrix = glm::translate(modelMatrix, sunPos);
-		float scale = 20.0f;
+		float scale = 60.0f;
 		modelMatrix = glm::scale(modelMatrix, glm::vec3(scale));
 		sunShader.setMatrix4("model", modelMatrix);
 		sunShader.setMatrix4("view", viewMatrix);
 		sunShader.setMatrix4("projection", projectionMatrix);
 		sunShader.setVector3f("sunPos", sunPos);
-		sunShader.setFloat("time", glfwGetTime()/10);
-		sunShader.setFloat("random", ((sin(glfwGetTime()) + 1.0) / 6.0) + 0.4);
-		glm::vec3 dist = sunPos - camera.Position;
+		sunShader.setFloat("time", glfwGetTime()/10); //don't move too fast
+		sunShader.setFloat("random", ((sin(glfwGetTime()) + 1.0) / 6.0) + 0.4); //random between 0.40 and 0.73
+		glm::vec3 dist = sunPos - camera.Position; //distance between sun center and camera
 		float distance = sqrt(pow(dist.x, 2) + pow(dist.y, 2) + pow(dist.z, 2));
-		float angle = 2 * tan((1.0f*scale)/ distance);
+		float angle = 2 * tan((1.0f*scale)/ distance); //angle of the sun in the viewport = atan(radius (=1) * scale /dist)
 		sunShader.setFloat("cameraFov", camera.Fov);
-		sunShader.setFloat("angle", glm::degrees(angle));
+		sunShader.setFloat("angle", glm::degrees(angle)); //used for ratio between sun angle in viewport and camera Fov
 		SunModel.Draw(sunShader);
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
