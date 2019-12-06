@@ -115,7 +115,7 @@ int starsCount = 0;
 glm::vec3 planetPos = glm::vec3(-400.0f, -150.0f, 120.0f);
 
 //sun
-glm::vec3 sunPos = glm::vec3(-200.0f, -150.0f, -100.0f);;
+glm::vec3 sunPos = glm::vec3(-200.0f, -150.0f, -100.0f);
 
 //asteroids
 unsigned int asteroidAmount = 10000;
@@ -247,8 +247,6 @@ int main(int argc, char* argv[]) {
 	lightArray.push_back(&rotatingLight);
 	GLuint lightVAO = rotatingLight.getVAO();
 	
-	LightSource blueLight = LightSource(&lightCounter, POINTLIGHT, glm::vec3(8.0f, 4.0f, 2.0f), glm::vec3(0.0f,0.3f,0.3f), 1.0f, 0.022f, 0.0019f, 0.5f, lightVAO);
-	lightArray.push_back(&blueLight);
 	LightSource flashLight = LightSource(&lightCounter, SPOTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.022f, 0.0019f, camera.Front, 4.5f, 6.5f, 0.5f, 0);
 	lightArray.push_back(&flashLight);
 	LightSource jumperFlashLight = LightSource(&lightCounter, SPOTLIGHT, jumper1.Position + flashlightJumperOffset, glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.022f, 0.0019f, glm::vec3(0.0f,0.0f,1.0f), 8.5f, 12.5f, 0.2f, 0);
@@ -256,6 +254,12 @@ int main(int argc, char* argv[]) {
 	
 	LightSource sunLight = LightSource(&lightCounter, POINTLIGHT, sunPos, glm::vec3(1.0f, 0.6f, 0.2f)*1.0f, 1.0f, 0.00080f, 0.0000070f, 1.0f, lightVAO);
 	lightArray.push_back(&sunLight);
+
+	LightSource waterStargateLight = LightSource(&lightCounter, POINTLIGHT, stargatePos, glm::vec3(0.3f, 0.5f, 1.0f) *3.0f, 1.0f, 0.0022f, 0.0019f, 0.5f, lightVAO);
+	lightArray.push_back(&waterStargateLight);
+
+	//to debug a light, comment the push back for the others and set lightCounter = 1;
+
 
 	//camera initial look at position
 	camera.setInitialLookAt(glm::vec3(0.0f, 0.0f, 0.0f));
@@ -509,12 +513,12 @@ int main(int argc, char* argv[]) {
 		jumperFlashLight.updateFlashLightDirection(jumper1.Front);
 		jumperFlashLight.updatePosition(jumper1.Position + glm::vec3(jumper1.Right * flashlightJumperOffset.x) + glm::vec3(jumper1.Up * flashlightJumperOffset.y) + glm::vec3(jumper1.Front * flashlightJumperOffset.z));
 		jumperFlashLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-		blueLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 		
 		rotatingLight.updatePosition(glm::vec3(sin(glfwGetTime() * 0.6f) * 10.0f, cos(glfwGetTime() * 0.3f) * 7.0f, sin(glfwGetTime()) * 8.0f));
 		rotatingLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-		sunLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-
+		//sunLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
+		waterStargateLight.updatePosition(stargatePos);
+		waterStargateLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 
 		
 		//2nd render pass: outlining of the jumper
