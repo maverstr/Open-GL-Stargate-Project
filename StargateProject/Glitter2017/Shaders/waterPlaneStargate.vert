@@ -4,12 +4,12 @@ layout (location = 2) in vec2 aTexCoords;
 
 out vec2 TexCoords;
 out vec2 viewportPixelCoord;
-out vec2 sunPosViewportPixelCoord;
+out vec2 PosViewportPixelCoord;
 
 uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 model;
-uniform vec3 sunPos;
+uniform vec3 stargatePos;
 
 
 
@@ -22,9 +22,9 @@ void main()
 	vec3 ndc = gl_Position.xyz / gl_Position.w; //perspective divide/normalize
 	vec2 viewportCoord = ndc.xy * 0.5 + 0.5; //ndc is -1 to 1 in GL. scale for 0 to 1
 	viewportPixelCoord = viewportCoord;
-
+	
 	//center of model position so we can recenter the UV coordinates on the model itself and not relative to the screen
-	vec4 sunPosition = projection * view * vec4(sunPos, 1.0f); //no need for model here since sunpos is already translated intrinsecally
-	ndc = sunPosition.xyz / sunPosition.w; //perspective divide/normalize
-	sunPosViewportPixelCoord = ndc.xy * 0.5 + 0.5; //ndc is -1 to 1 in GL. scale for 0 to 1; 
+	vec4 Position =  projection * view * vec4(stargatePos, 1.0f);;
+	ndc = Position.xyz / Position.w; //perspective divide/normalize
+	PosViewportPixelCoord = ndc.xy * 0.5 + 0.5; //ndc is -1 to 1 in GL. scale for 0 to 1; 
 }

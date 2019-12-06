@@ -1,5 +1,5 @@
 # Blender MTL File: 'Stargate.blend'
-# Material Count: 7
+# Material Count: 6
 
 newmtl Material.001
 Ns 225.000000
@@ -13,7 +13,6 @@ illum 2
 map_Kd SymbolsDiffuseMap.png
 map_Ks SymbolsSpecularMap.png
 map_Ke SymbolsEmissionMap.png
-
 
 newmtl Steel
 Ns 225.000000
@@ -54,16 +53,6 @@ Ke 0.0 0.0 0.0
 Ni 1.450000
 d 1.000000
 illum 3
-
-newmtl WATER
-Ns 225.000000
-Ka 1.000000 1.000000 1.000000
-Kd 0.010485 0.110777 0.201897
-Ks 0.500000 0.500000 0.500000
-Ke 0.0 0.0 0.0
-Ni 1.450000
-d 1.000000
-illum 2
 
 newmtl lockEmission
 Ns 225.000000

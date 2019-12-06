@@ -105,6 +105,9 @@ float explosionDistance = 0;
 float maxExplosionDistance = -1;
 bool isExploded = false;
 
+//stargate
+glm::vec3 stargatePos = glm::vec3(-15.0f, -15.0f, -5.0f);
+
 //stars
 int starsCount = 0;
 
@@ -189,8 +192,10 @@ int main(int argc, char* argv[]) {
 	skyboxShader.compile();
 
 	Shader stargateShader = Shader("Shaders/model.vert", "Shaders/model.frag", "Shaders/model.geom");
-	//Shader modelShader = Shader("Shaders/modelWithWholeMaterial.vert", "Shaders/modelWithWholeMaterial.frag");
 	stargateShader.compile();
+
+	Shader waterPlaneStargateShader = Shader("Shaders/waterPlaneStargate.vert", "Shaders/waterPlaneStargate.frag");
+	waterPlaneStargateShader.compile();
 
 	Shader jumperShader = Shader("Shaders/model.vert", "Shaders/model.frag", "Shaders/model.geom");
 	jumperShader.compile();
@@ -225,6 +230,7 @@ int main(int argc, char* argv[]) {
 	GLuint starsVAO = createStarsVAO(&starsCount);
 	//GLuint starsVAO = createStarsVAO(&starsCount, 100); //limit max number of stars to 100
 	Model StargateModel = Model("Models/Stargate.obj"); //Stargate
+	Model waterPlaneStargateModel = Model("Models/waterPlaneStargate.obj");
 	Model JumperModel = Model("Models/Jumper.obj");
 	Jumper jumper1 = Jumper(&JumperModel);
 	Model PlanetModel = Model("Models/planet.obj");
@@ -364,7 +370,7 @@ int main(int argc, char* argv[]) {
 		stargateShader.setInteger("skybox", 15);
 		stargateShader.setFloat("refractionRatio", 0.2f);
 		stargateShader.setInteger("material.reflection", 0);
-		glm::mat4 stargateModel = glm::translate(glm::mat4(1.0f), glm::vec3(-15.0f, -15.0f, -5.0f));
+		glm::mat4 stargateModel = glm::translate(glm::mat4(1.0f), stargatePos);
 		stargateShader.setMatrix4("model", stargateModel);
 		stargateShader.setMatrix4("view", viewMatrix);
 		stargateShader.setMatrix4("projection", projectionMatrix);
@@ -379,6 +385,22 @@ int main(int argc, char* argv[]) {
 			(*lightArray[i]).setModelShaderLightParameters(stargateShader, i);
 		}
 		StargateModel.Draw(stargateShader);
+
+		waterPlaneStargateShader.use();
+		waterPlaneStargateShader.setMatrix4("model", stargateModel);
+		waterPlaneStargateShader.setMatrix4("view", viewMatrix);
+		waterPlaneStargateShader.setMatrix4("projection", projectionMatrix);
+		waterPlaneStargateShader.setVector3f("stargatePos", stargatePos);
+		waterPlaneStargateShader.setFloat("time", glfwGetTime() / 5);
+		glm::vec3 dist = stargatePos - camera.Position;
+		float distance = sqrt(pow(dist.x, 2) + pow(dist.y, 2) + pow(dist.z, 2));
+		float angle = 2 * tan((1.0f) / distance);
+		waterPlaneStargateShader.setFloat("cameraFov", camera.Fov);
+		waterPlaneStargateShader.setFloat("angle", glm::degrees(angle));
+		waterPlaneStargateModel.Draw(waterPlaneStargateShader);
+		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
+		glStencilMask(0xFF); // enable writing to the stencil buffer
 
 		//Note: here the outlining will appear underneath the object drawn here -> kind of see through effect if needed !!!!
 		
@@ -395,9 +417,9 @@ int main(int argc, char* argv[]) {
 		sunShader.setVector3f("sunPos", sunPos);
 		sunShader.setFloat("time", glfwGetTime()/10);
 		sunShader.setFloat("random", ((sin(glfwGetTime()) + 1.0) / 6.0) + 0.4);
-		glm::vec3 dist = sunPos - camera.Position;
-		float distance = sqrt(pow(dist.x, 2) + pow(dist.y, 2) + pow(dist.z, 2));
-		float angle = 2 * tan((1.0f*scale)/ distance);
+		dist = sunPos - camera.Position;
+		distance = sqrt(pow(dist.x, 2) + pow(dist.y, 2) + pow(dist.z, 2));
+		angle = 2 * tan((1.0f*scale)/ distance);
 		sunShader.setFloat("cameraFov", camera.Fov);
 		sunShader.setFloat("angle", glm::degrees(angle));
 		SunModel.Draw(sunShader);

@@ -39,17 +39,18 @@ float snoise(vec3 uv, float res)	// by "trisomie21" on ShaderToy
 void main()
 {
 	//inspired by different shaders on ShaderToy, heavily modified to work in GLSL and tweaked with experimental values using Render doc shader "real-time" editor
+	//special credits to "trisomie21"
 	float Random = random;
 	float brightness	= Random *0.4;
 	float radius		= 0.24 + brightness * 0.2;
 	float invRadius 	= 1.0/radius;
 	
 	vec3 orange			= vec3( 0.8, 0.65, 0.3 );
-	vec3 almostRed = vec3(1.0f, 0.1f, 0.05f) * 0.00001;
+	vec3 almostRed		= vec3(1.0f, 0.1f, 0.05f) * 0.00001;
 	vec3 orangeRed		= vec3( 0.8, 0.20, 0.1 );
 	float time = time;
 	float aspect	= 1690.0f/1050.0f;
-	vec2 uv			=  (viewportPixelCoord - sunPosViewportPixelCoord) *(cameraFov/angle) *1.15; //screen coordinates
+	vec2 uv			=  (viewportPixelCoord - sunPosViewportPixelCoord) *(cameraFov/angle) *1.15; //screen coordinates, need to correct for camera FOV
 	vec2 p 			=  uv;
 	p.x *= aspect;
 

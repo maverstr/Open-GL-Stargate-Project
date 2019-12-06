@@ -12,3 +12,6 @@ The drawing is done using instances to increase performance !!!
 - reflection map (for metallic effect of the ship) using reflection mapping
 - outlining of the model using stencil buffer
 - (background music)
+
+- sun shader, moving with time and lighting corona
+- water ripple shader in stargate, sum of 4 circular wave and a spiral, moving with time
