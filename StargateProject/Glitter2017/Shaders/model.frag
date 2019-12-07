@@ -7,7 +7,7 @@ struct Material {
 	sampler2D texture_normal1;
 	sampler2D texture_height1;
 	sampler2D texture_emisson1;
-	sampler2D texure_reflectionMap;
+	sampler2D texture_reflectionMap;
 	int reflection;
 	float shininess;
 	vec3 ambient; //material properties
@@ -44,7 +44,6 @@ in vec3 FragPos;
 in vec2 TexCoords;
 in vec3 test;
 
-uniform vec3 objectColor;
 uniform vec3 viewPos;
 
 uniform samplerCube skybox; //for refraction
@@ -120,8 +119,8 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 		}
 
 	////////////////////////////RESULT////////////////////////////////////
-	vec3 result = (ambient + diffuse + specular) * attenuation;
-	result = diffuse;
+	vec3 result = (ambient*0.125f + diffuse + specular) * attenuation;
+	//result = diffuse;
 	return result;
 }
 
@@ -136,7 +135,7 @@ vec3 calcReflection(vec3 normal, vec3 viewDir){
 	vec3 R = reflect(viewDir, normal); //using OpenGL built-in function, algebra is similar to specular light
 	vec3 reflection = vec3(texture(skybox, R).rgb);
 	if(material.reflection == 1)
-		reflection = reflection * texture(material.texure_reflectionMap, TexCoords).x; //map for reflection values
+		reflection = reflection * texture(material.texture_reflectionMap, TexCoords).x; //map for reflection values
 	else
 		reflection = vec3(0,0,0);
 	return reflection;

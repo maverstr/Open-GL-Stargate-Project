@@ -1,7 +1,9 @@
 #version 330 core
 out vec4 FragColor;
-
-uniform sampler2D texture_diffuse1;
+struct Material{
+	sampler2D texture_diffuse1;
+};
+uniform Material material;
 uniform float time;
 uniform float angle;
 uniform float cameraFov;
@@ -84,7 +86,7 @@ void main()
 	FragColor.rgb	= vec3( f * ( 0.75 + brightness * 0.8 ) * orange ) ; //drawing the basic circle with varying brightness
 
 	if( dist < (radius*1.4)){
-		FragColor = mix(FragColor, texture(texture_diffuse1, TexCoords), 0.7); //adding the texture in the sun core
+		FragColor = mix(FragColor, texture(material.texture_diffuse1, TexCoords), 0.7); //adding the texture in the sun core
 	}
 	if (dist < (radius *1.8)){
 		corona			*= pow( dist * invRadius, 25.0 );

@@ -10,8 +10,6 @@ out VS_OUT {
 	vec3 NormalInMVP;
 } vs_out;
 
-
-uniform mat4 transMat;
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;

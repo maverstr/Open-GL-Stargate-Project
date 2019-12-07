@@ -113,6 +113,7 @@ int starsCount = 0;
 
 //planet
 glm::vec3 planetPos = glm::vec3(-400.0f, -150.0f, 120.0f);
+float planetRotation = 0.0f;
 
 //sun
 glm::vec3 sunPos = glm::vec3(-200.0f, -150.0f, -100.0f);
@@ -329,7 +330,7 @@ int main(int argc, char* argv[]) {
 
 		//	camera.updatePositionFPSView(jumper1.Position + +glm::vec3(jumper1.Right * jumperFirstPersonOffset.x) + glm::vec3(jumper1.Up * jumperFirstPersonOffset.y) + glm::vec3(jumper1.Front * jumperFirstPersonOffset.z), - jumper1.Front);
 
-		showFPS();
+		//showFPS();
 
 		//Calculate coordinate systems every frame
 		modelMatrix = createModelMatrix();
@@ -361,7 +362,6 @@ int main(int argc, char* argv[]) {
 		//Axis drawing
 		glBindVertexArray(AxisVAO);
 		axisShader.use();
-		axisShader.setMatrix4("transMat", glm::mat4(1.0f));
 		axisShader.setMatrix4("MVP", MVPMatrix);
 		glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
 		glBindVertexArray(0);
@@ -378,7 +378,6 @@ int main(int argc, char* argv[]) {
 		stargateShader.setMatrix4("model", stargateModel);
 		stargateShader.setMatrix4("view", viewMatrix);
 		stargateShader.setMatrix4("projection", projectionMatrix);
-		stargateShader.setVector3f("objectColor", 1.0f, 0.5f, 0.0f);
 		stargateShader.setVector3f("viewPos", camera.Position);
 		stargateShader.setFloat("material.shininess", 32.0f);
 		stargateShader.setFloat("explosionDistance", -1);
@@ -436,11 +435,23 @@ int main(int argc, char* argv[]) {
 		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 		planetShader.use();
 		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = glm::translate(modelMatrix, planetPos);
+		planetRotation += 0.12f;
+		if (planetRotation >= 360.0f){
+			planetRotation = 0.0f;
+		}
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(planetRotation), glm::vec3(0.1f, 1.0f, 0.2f));
+		modelMatrix[3] = glm::vec4(planetPos, 1.0f);
+		//modelMatrix = glm::translate(modelMatrix, planetPos);
 		modelMatrix = glm::scale(modelMatrix, glm::vec3(8.0f, 8.0f, 8.0f));
 		planetShader.setMatrix4("model", modelMatrix);
 		planetShader.setMatrix4("view", viewMatrix);
 		planetShader.setMatrix4("projection", projectionMatrix);
+		planetShader.setVector3f("viewPos", camera.Position);
+		planetShader.setFloat("material.shininess", 16.0f);
+		planetShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
+		for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
+			(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
+		}
 		PlanetModel.Draw(planetShader);
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
@@ -468,6 +479,7 @@ int main(int argc, char* argv[]) {
 		jumperShader.setInteger("skybox", 15);
 		glActiveTexture(GL_TEXTURE14);
 		glBindTexture(GL_TEXTURE_2D, jumperReflectionMap);
+		jumperShader.setInteger("material.texture_reflectionMap", 14);
 		if (isExploded) {
 			explosionDistance = sin(((glfwGetTime() - timeOfExplosion)*2 - 1) / 3.0f); //center the range and slow down the animation
 			if (explosionDistance > 0.99f) {
@@ -478,13 +490,11 @@ int main(int argc, char* argv[]) {
 		else {
 			jumperShader.setFloat("explosionDistance", -1);
 		}
-		jumperShader.setInteger("material.texure_reflectionMap", 14);
 		jumperShader.setFloat("refractionRatio", 0.0f);
 		jumperShader.setInteger("material.reflection", 1);
 		jumperShader.setMatrix4("model", moveModel(jumper1, false));
 		jumperShader.setMatrix4("view", viewMatrix);
 		jumperShader.setMatrix4("projection", projectionMatrix);
-		jumperShader.setVector3f("objectColor", 1.0f, 0.5f, 0.0f);
 		jumperShader.setVector3f("viewPos", camera.Position);
 		jumperShader.setFloat("material.shininess", 32.0f);
 
