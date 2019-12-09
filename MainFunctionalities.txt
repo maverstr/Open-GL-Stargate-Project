@@ -16,3 +16,26 @@ The drawing is done using instances to increase performance !!!
 - sun shader, moving with time and lighting corona
 - water ripple shader in stargate, sum of 4 circular wave and a spiral, moving with time
 - explosion effect using the normals and geometry shader
+- launchable missile with cooldown
+
+keybindings:
+Camera Movements:
+	ZQSD - move Camera
+	X, SPACE - move Camera vertically
+	SHIFT - increase Camera Movement speed
+	Mouse - orient Camera
+
+Jumper (ship):
+	T, G - move forward/backward
+	H, F - move laterally
+	Y, B - move vertically
+	Arrows - orient Jumper (pitch & roll)
+	+, - - orient Jumper (Yaw)
+
+Miscellaneous:
+	K - explode Jumper
+	L - launch missile (10 sec cooldown)
+	O - outline Jumper
+	P - pause Music
+	
+

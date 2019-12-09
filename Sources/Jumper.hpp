@@ -140,12 +140,9 @@ public:
 	}
 
 private:
-
-	// Calculates the front vector from the Camera's (updated) Eular Angles
 	void updateVectors()
 	{
 		// Calculate the new Front vector
-
 		glm::mat4 rotMat = glm::mat4(1.0f);
 		rotMat = glm::rotate(rotMat, glm::radians(this->deltaYaw), glm::vec3(this->Up));
 		this->Front = rotMat * this->Front;

@@ -121,5 +121,11 @@
     <None Include="Shaders\waterPlaneStargate.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Shaders\missile.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\missile.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

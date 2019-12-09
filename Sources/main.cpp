@@ -58,6 +58,8 @@ void createAsteroidVAO(int asteroidAmount, Model asteroidModel, glm::vec3 planet
 
 //Coordinate systems
 glm::mat4 moveModel(Jumper jumper, bool outlining);
+glm::mat4 createModelMissile(Jumper jumper);
+void captureMissileSettings(Jumper jumper);
 glm::mat4 createProjectionMatrix(void);
 glm::mat4 createViewMatrix(void);
 glm::mat4 createModelMatrix(void);
@@ -107,6 +109,15 @@ bool isExploded = false;
 
 //stargate
 glm::vec3 stargatePos = glm::vec3(-15.0f, -15.0f, -5.0f);
+
+//missile
+glm::vec3 missilePosition = glm::vec3(0.0f);
+glm::vec3 missileDirection = glm::vec3(0.0f);
+glm::vec3 missileBasePosition = glm::vec3(0.0f);
+glm::mat4 missileOrientation = glm::mat4(0.0f);
+bool missileLaunched = false;
+bool boolCaptureMissileSettings = false;
+float missileTimeCounter = 0.0f;
 
 //stars
 int starsCount = 0;
@@ -215,6 +226,9 @@ int main(int argc, char* argv[]) {
 
 	Shader starsShader = Shader("Shaders/stars.vert", "Shaders/stars.frag");
 	starsShader.compile();
+	
+	Shader missileShader = Shader("Shaders/missile.vert", "Shaders/missile.frag");
+	missileShader.compile();
 
 	Shader lightShader = Shader("Shaders/lightSource.vert", "Shaders/lightSource.frag");
 	lightShader.compile();
@@ -238,6 +252,7 @@ int main(int argc, char* argv[]) {
 	Model AsteroidModel = Model("Models/rock.obj");
 	createAsteroidVAO(asteroidAmount, AsteroidModel, planetPos); //no return value as there is one VAO per asteroid...
 	Model SunModel = Model("Models/Sun.obj");
+	Model missileModel = Model("Models/missile.obj");
 
 
 
@@ -470,7 +485,22 @@ int main(int argc, char* argv[]) {
 			glDrawElementsInstanced(GL_TRIANGLES, AsteroidModel.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, asteroidAmount);
 			glBindVertexArray(0);
 		}
-		
+
+		// draw missile
+		missileShader.use();
+		missileShader.setMatrix4("view", viewMatrix);
+		missileShader.setMatrix4("projection", projectionMatrix);
+		missileShader.setMatrix4("model", createModelMissile(jumper1));
+		if (boolCaptureMissileSettings) { //need to store jumper direction and orientation for the missile to follow its path
+			//so i use a flag triggered by glfw keys
+			captureMissileSettings(jumper1);
+			boolCaptureMissileSettings = false;
+		}
+		if (missileLaunched && (glfwGetTime() - missileTimeCounter) > 10.0f) {
+			//after set time, missile is reset
+			missileLaunched = false;
+		}
+		missileModel.Draw(missileShader);
 
 		//jumper model drawing
 		jumperShader.use();
@@ -791,7 +821,27 @@ glm::mat4 moveModel(Jumper jumper, bool outlining) {
 	}
 	return modelMat;
 }
+glm::mat4 createModelMissile(Jumper jumper) {
+	glm::mat4 modelMat = glm::mat4(1.0f);
+	if (missileLaunched) {
+		float time = glfwGetTime();
+		modelMat = missileOrientation;
+		glm::vec3 flightDisplacement = missileDirection * (time - missileTimeCounter) * 40.0f;
+		modelMat[3] = glm::vec4(missileBasePosition + flightDisplacement, 1.0f);
+	}
+	else {
+	modelMat = jumper.rotMatTotal;
+	modelMat[3] = glm::vec4(jumper.Position - (glm::vec3(jumper.Up) * 1.3f), 1.0);
+	}
+	return modelMat;
+}
 
+void captureMissileSettings(Jumper jumper) {
+	missileDirection = jumper.Front;
+	missileOrientation = jumper.rotMatTotal;
+	missileBasePosition = glm::vec3(jumper.Position - (glm::vec3(jumper.Up) * 1.3f));
+	missileTimeCounter = glfwGetTime();
+}
 
 glm::mat4 createViewMatrix(void) {
 	glm::mat4 ViewMat = camera.GetViewMatrix();
@@ -950,8 +1000,16 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 		}
 	}
 
+	//missile Launch
+	if (keys[GLFW_KEY_L]) {
+		if (!missileLaunched) {
+			missileLaunched = true;
+			boolCaptureMissileSettings = true;
+		}
+	}
+
 	//sound
-	if (keys[GLFW_KEY_COMMA])
+	if (keys[GLFW_KEY_P])
 		musicBool = true;
 
 	//Wireframe or point mode 
