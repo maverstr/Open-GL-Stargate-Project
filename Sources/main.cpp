@@ -416,9 +416,6 @@ int main(int argc, char* argv[]) {
 		waterPlaneStargateShader.setFloat("cameraFov", camera.Fov);
 		waterPlaneStargateShader.setFloat("angle", glm::degrees(angle));
 		waterPlaneStargateModel.Draw(waterPlaneStargateShader);
-		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
-		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
-		glStencilMask(0xFF); // enable writing to the stencil buffer
 
 		//Note: here the outlining will appear underneath the object drawn here -> kind of see through effect if needed !!!!
 		
@@ -441,9 +438,6 @@ int main(int argc, char* argv[]) {
 		sunShader.setFloat("cameraFov", camera.Fov);
 		sunShader.setFloat("angle", glm::degrees(angle)); //used for ratio between sun angle in viewport and camera Fov
 		SunModel.Draw(sunShader);
-		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
-		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
-		glStencilMask(0xFF); // enable writing to the stencil buffer
 
 
 		//planet drawing
@@ -468,9 +462,6 @@ int main(int argc, char* argv[]) {
 			(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
 		}
 		PlanetModel.Draw(planetShader);
-		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
-		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
-		glStencilMask(0xFF); // enable writing to the stencil buffer
 		
 		// draw asteroides
 		asteroidShader.use();
@@ -502,7 +493,11 @@ int main(int argc, char* argv[]) {
 		}
 		missileModel.Draw(missileShader);
 
+		
 		//jumper model drawing
+		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
+		glStencilMask(0xFF); // enable writing to the stencil buffer
 		jumperShader.use();
 		glActiveTexture(GL_TEXTURE15);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);

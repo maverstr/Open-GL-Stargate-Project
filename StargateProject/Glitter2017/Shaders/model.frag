@@ -6,7 +6,7 @@ struct Material {
     sampler2D texture_specular1;
 	sampler2D texture_normal1;
 	sampler2D texture_height1;
-	sampler2D texture_emisson1;
+	sampler2D texture_emission1;
 	sampler2D texture_reflectionMap;
 	int reflection;
 	float shininess;
@@ -126,7 +126,7 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 
 vec3 calcEmission(void){
 	// emission
-	vec3 emission = mix(texture(material.texture_emisson1, TexCoords).rgb, material.emission, material.mixRatio);
+	vec3 emission = mix(texture(material.texture_emission1, TexCoords).rgb, material.emission, material.mixRatio);
 	return emission;
 }
 
