@@ -128,12 +128,14 @@
     <ClInclude Include="..\..\Sources\LightSource.h" />
     <ClInclude Include="..\..\Sources\Mesh.hpp" />
     <ClInclude Include="..\..\Sources\Model.hpp" />
+    <ClInclude Include="..\..\Sources\ParticleGenerator.h" />
     <ClInclude Include="..\..\Sources\Shader.hpp" />
     <ClInclude Include="..\..\vendors\includes\glad\glad.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Sources\glad.c" />
     <ClCompile Include="..\..\Sources\main.cpp" />
+    <ClCompile Include="..\..\Sources\ParticleGenerator.cpp" />
     <ClCompile Include="..\..\Sources\Shader.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -150,6 +152,8 @@
     <None Include="Shaders\model.vert" />
     <None Include="Shaders\modelOutlining.frag" />
     <None Include="Shaders\modelOutlining.vert" />
+    <None Include="Shaders\particle.frag" />
+    <None Include="Shaders\particle.vert" />
     <None Include="Shaders\planet.frag" />
     <None Include="Shaders\planet.vert" />
     <None Include="Shaders\skybox.frag" />

@@ -39,6 +39,9 @@
     <ClInclude Include="..\..\Sources\Jumper.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\Sources\ParticleGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\Sources\Shader.cpp">
@@ -49,6 +52,9 @@
     </ClCompile>
     <ClCompile Include="..\..\Sources\main.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\Sources\ParticleGenerator.cpp">
+      <Filter>Header Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -125,6 +131,12 @@
       <Filter>Resource Files</Filter>
     </None>
     <None Include="Shaders\missile.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\particle.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\particle.vert">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

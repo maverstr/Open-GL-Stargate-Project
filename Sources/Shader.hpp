@@ -18,7 +18,7 @@ public:
 	// Constructor
 	Shader(const GLchar *vertexSource, const GLchar *fragmentSource, const GLchar *geometrySource = nullptr, const GLchar *tessCPath = nullptr, const GLchar *tessEPath = nullptr);
 
-	// Sets the current shader as active, do we need to return?
+	// Sets the current shader as active
 	Shader& use();
 
 	// Not sure compile should be it's own step separate from constructor

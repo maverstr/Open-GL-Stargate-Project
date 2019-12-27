@@ -17,6 +17,7 @@
 #include "Camera.hpp"
 #include "LightSource.h"
 #include "Jumper.hpp"
+#include "ParticleGenerator.h"
 using namespace std;
 
 //matrices
@@ -118,6 +119,9 @@ glm::mat4 missileOrientation = glm::mat4(0.0f);
 bool missileLaunched = false;
 bool boolCaptureMissileSettings = false;
 float missileTimeCounter = 0.0f;
+
+//particles
+float dt = 0.004f; //life delta: 2000 particles, 8 spawns per frame, 1 of life at start => 0.004 of delta per frame
 
 //stars
 int starsCount = 0;
@@ -233,6 +237,9 @@ int main(int argc, char* argv[]) {
 	Shader lightShader = Shader("Shaders/lightSource.vert", "Shaders/lightSource.frag");
 	lightShader.compile();
 
+	Shader particleShader = Shader("Shaders/particle.vert", "Shaders/particle.frag");
+	particleShader.compile();
+
 
 	//Textures
 	GLuint skyboxTexture = createCubeMapTexture();
@@ -254,7 +261,9 @@ int main(int argc, char* argv[]) {
 	Model SunModel = Model("Models/Sun.obj");
 	Model missileModel = Model("Models/missile.obj");
 
-
+	//particles
+	ParticleGenerator* Particles;
+	Particles = new ParticleGenerator(particleShader, 2000);
 
 
 	//lights
@@ -415,10 +424,7 @@ int main(int argc, char* argv[]) {
 		float angle = 2 * tan((1.0f) / distance);
 		waterPlaneStargateShader.setFloat("cameraFov", camera.Fov);
 		waterPlaneStargateShader.setFloat("angle", glm::degrees(angle));
-		waterPlaneStargateModel.Draw(waterPlaneStargateShader);
-
-		//Note: here the outlining will appear underneath the object drawn here -> kind of see through effect if needed !!!!
-		
+		waterPlaneStargateModel.Draw(waterPlaneStargateShader);		
 
 		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 		sunShader.use();
@@ -477,7 +483,17 @@ int main(int argc, char* argv[]) {
 			glBindVertexArray(0);
 		}
 
+		//particles update, must be rendered before missile and jumper otherwise will be rendered above
+		Particles->Update(dt, missilePosition, missileDirection, 8, -missileDirection * 4.8f); //rendered on missile position, with an offset to put it at the end, and velocity and its direction
+		particleShader.use();
+		particleShader.setMatrix4("view", viewMatrix);
+		particleShader.setMatrix4("projection", projectionMatrix);
+		Particles->Draw();
+
 		// draw missile
+		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
+		glStencilMask(0xFF); // enable writing to the stencil buffer
 		missileShader.use();
 		missileShader.setMatrix4("view", viewMatrix);
 		missileShader.setMatrix4("projection", projectionMatrix);
@@ -822,16 +838,20 @@ glm::mat4 createModelMissile(Jumper jumper) {
 		float time = glfwGetTime();
 		modelMat = missileOrientation;
 		glm::vec3 flightDisplacement = missileDirection * (time - missileTimeCounter) * 40.0f;
-		modelMat[3] = glm::vec4(missileBasePosition + flightDisplacement, 1.0f);
+		missilePosition = missileBasePosition + flightDisplacement;
+		modelMat[3] = glm::vec4(missilePosition, 1.0f);
 	}
 	else {
-	modelMat = jumper.rotMatTotal;
-	modelMat[3] = glm::vec4(jumper.Position - (glm::vec3(jumper.Up) * 1.3f), 1.0);
+	missileOrientation = jumper.rotMatTotal;
+	missileDirection = jumper.Front;
+	modelMat = missileOrientation;
+	missilePosition = jumper.Position - (glm::vec3(jumper.Up) * 1.3f);
+	modelMat[3] = glm::vec4(missilePosition, 1.0);
 	}
 	return modelMat;
 }
 
-void captureMissileSettings(Jumper jumper) {
+void captureMissileSettings(Jumper jumper) { //called when missile launched to set the parameters
 	missileDirection = jumper.Front;
 	missileOrientation = jumper.rotMatTotal;
 	missileBasePosition = glm::vec3(jumper.Position - (glm::vec3(jumper.Up) * 1.3f));

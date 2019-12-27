@@ -17,6 +17,7 @@ The drawing is done using instances to increase performance !!!
 - water ripple shader in stargate, sum of 4 circular wave and a spiral, moving with time
 - explosion effect using the normals and geometry shader
 - launchable missile with cooldown
+- particle effects for the missile
 
 keybindings:
 Camera Movements:
@@ -37,5 +38,6 @@ Miscellaneous:
 	L - launch missile (10 sec cooldown)
 	O - outline Jumper
 	P - pause Music
+	1,2,3 - Wireframe modes
 	
 
