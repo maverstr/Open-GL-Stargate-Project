@@ -139,5 +139,17 @@
     <None Include="Shaders\particle.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Shaders\lightBulbCenter.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\lightBulbCenter.vert">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\lightBulbGlass.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\lightBulbGlass.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

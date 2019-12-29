@@ -21,6 +21,7 @@ The drawing is done using instances to increase performance !!!
 
 - reflection and refraction for the planet can be toggled
 - very basic implementation of MSAA (anti-aliasing)
+- use of blending for transparency of a light bulb glass
 
 keybindings:
 Camera Movements:

@@ -21,6 +21,5 @@ void main()
 		float distance = length(viewPos - FragPos);
 		attenuation = 1.0 / (thisLight.constant + thisLight.linear * distance + thisLight.quadratic * (distance * distance));
 	}
-	//////////////////////////////PHONGS SHADING////////////////////////////////
     FragColor = vec4(color * attenuation, 1.0f);
 }

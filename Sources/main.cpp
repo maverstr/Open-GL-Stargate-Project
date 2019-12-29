@@ -247,6 +247,12 @@ int main(int argc, char* argv[]) {
 	Shader particleShader = Shader("Shaders/particle.vert", "Shaders/particle.frag");
 	particleShader.compile();
 
+	Shader lightBulbCenterShader = Shader("Shaders/lightBulbCenter.vert", "Shaders/lightBulbCenter.frag");
+	lightBulbCenterShader.compile();
+
+	Shader lightBulbGlassShader = Shader("Shaders/lightBulbGlass.vert", "Shaders/lightBulbGlass.frag");
+	lightBulbGlassShader.compile();
+
 
 	//Textures
 	GLuint skyboxTexture = createCubeMapTexture();
@@ -267,6 +273,9 @@ int main(int argc, char* argv[]) {
 	createAsteroidVAO(asteroidAmount, AsteroidModel, planetPos); //no return value as there is one VAO per asteroid...
 	Model SunModel = Model("Models/Sun.obj");
 	Model missileModel = Model("Models/missile.obj");
+	Model lightBulbCenterModel = Model("Models/lightBulbCenter.obj");
+	Model lightBulbGlassModel = Model("Models/lightBulbGlass.obj");
+	Model jumperFlashLightModel = Model("Models/JumperFlashLight.obj");
 
 	//particles
 	ParticleGenerator* Particles;
@@ -275,19 +284,19 @@ int main(int argc, char* argv[]) {
 
 	//lights
 	//pointer, pos, [color] OR [ambient, diffuse, specular,], [constant, linear, quadratic attenuation,] [spotlight direction, inner angle, outer angle,] size, VAO from other lights (0 if none already created)
-	LightSource rotatingLight = LightSource(&lightCounter, POINTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.082f, 0.0019f, 0.5f, 0);
+	LightSource rotatingLight = LightSource(&lightCounter, POINTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.0008f, 0.00002f, 0.5f, 0);
 	lightArray.push_back(&rotatingLight);
 	GLuint lightVAO = rotatingLight.getVAO();
 	
-	LightSource flashLight = LightSource(&lightCounter, SPOTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.022f, 0.0019f, camera.Front, 4.5f, 6.5f, 0.5f, 0);
+	LightSource flashLight = LightSource(&lightCounter, SPOTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.0032f, 0.0008f, camera.Front, 4.5f, 6.5f, 0.5f, 0);
 	lightArray.push_back(&flashLight);
-	LightSource jumperFlashLight = LightSource(&lightCounter, SPOTLIGHT, jumper1.Position + flashlightJumperOffset, glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.022f, 0.0019f, glm::vec3(0.0f,0.0f,1.0f), 8.5f, 12.5f, 0.2f, 0);
+	LightSource jumperFlashLight = LightSource(&lightCounter, SPOTLIGHT, jumper1.Position + flashlightJumperOffset, glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.0032f, 0.0008f, glm::vec3(0.0f,0.0f,1.0f), 8.5f, 12.5f, 0.2f, 0);
 	lightArray.push_back(&jumperFlashLight);
 	
 	LightSource sunLight = LightSource(&lightCounter, POINTLIGHT, sunPos, glm::vec3(1.0f, 0.6f, 0.2f)*1.0f, 1.0f, 0.00080f, 0.0000070f, 1.0f, lightVAO);
 	lightArray.push_back(&sunLight);
 
-	LightSource waterStargateLight = LightSource(&lightCounter, POINTLIGHT, stargatePos, glm::vec3(0.3f, 0.5f, 1.0f) *3.0f, 1.0f, 0.0022f, 0.0019f, 0.5f, lightVAO);
+	LightSource waterStargateLight = LightSource(&lightCounter, POINTLIGHT, stargatePos, glm::vec3(0.3f, 0.5f, 1.0f) *3.0f, 1.0f, 0.0016f, 0.008f, 0.5f, lightVAO);
 	lightArray.push_back(&waterStargateLight);
 
 	//to debug a light, comment the push back for the others and set lightCounter = 1;
@@ -464,7 +473,6 @@ int main(int argc, char* argv[]) {
 		}
 		modelMatrix = glm::rotate(modelMatrix, glm::radians(planetRotation), glm::vec3(0.1f, 1.0f, 0.2f));
 		modelMatrix[3] = glm::vec4(planetPos, 1.0f);
-		//modelMatrix = glm::translate(modelMatrix, planetPos);
 		modelMatrix = glm::scale(modelMatrix, glm::vec3(8.0f, 8.0f, 8.0f));
 		planetShader.setMatrix4("model", modelMatrix);
 		planetShader.setMatrix4("view", viewMatrix);
@@ -521,7 +529,6 @@ int main(int argc, char* argv[]) {
 			missileLaunched = false;
 		}
 		missileModel.Draw(missileShader);
-
 		
 		//jumper model drawing
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
@@ -570,20 +577,60 @@ int main(int argc, char* argv[]) {
 		glBindVertexArray(0);
 		
 		//light drawing
-		modelMatrix = createModelMatrix();
-		lightShader.use();
+
+		//draw light Bulb Center
+		glEnable(GL_CULL_FACE);
+		lightBulbCenterShader.use();
+		lightBulbCenterShader.setMatrix4("view", viewMatrix);
+		lightBulbCenterShader.setMatrix4("projection", projectionMatrix);
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix[3] = glm::vec4(rotatingLight.Position);
+		lightBulbCenterShader.setMatrix4("model", modelMatrix);
+		lightBulbCenterModel.Draw(lightBulbCenterShader);
+
+		//draw light Bulb Glass (blending)
+		glEnable(GL_CULL_FACE); //needs to be turned ON here otherwise the blending will mess up with the texture on the other side of the glass.
+		lightBulbGlassShader.use();
+		lightBulbGlassShader.setMatrix4("view", viewMatrix);
+		lightBulbGlassShader.setMatrix4("projection", projectionMatrix);
+		lightBulbGlassShader.setMatrix4("model", modelMatrix);
+		lightBulbGlassModel.Draw(lightBulbGlassShader);
+
+		//draw jumper flashlight
+		glDisable(GL_CULL_FACE);
+		lightBulbCenterShader.use();
+		lightBulbCenterShader.setMatrix4("view", viewMatrix);
+		lightBulbCenterShader.setMatrix4("projection", projectionMatrix);
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = jumper1.rotMatTotal;
+		modelMatrix[3] = glm::vec4(jumperFlashLight.Position);
 		
+		lightBulbCenterShader.setMatrix4("model", modelMatrix);
+		jumperFlashLightModel.Draw(lightBulbCenterShader);
+
+		/*
+		//draw light Bulb Glass (blending) for jumper flashlight
+		glEnable(GL_CULL_FACE); //needs to be turned ON here otherwise the blending will mess up with the texture on the other side of the glass.
+		lightBulbGlassShader.use();
+		lightBulbGlassShader.setMatrix4("view", viewMatrix);
+		lightBulbGlassShader.setMatrix4("projection", projectionMatrix);
+		lightBulbGlassShader.setMatrix4("model", modelMatrix);
+		lightBulbGlassModel.Draw(lightBulbGlassShader);
+		*/
+
+		modelMatrix = glm::mat4(1.0f);
+		lightShader.use();
 		flashLight.updateFlashLightDirection(camera.Front);
 		flashLight.updatePosition(camera.Position);
 		jumperFlashLight.updateFlashLightDirection(jumper1.Front);
 		jumperFlashLight.updatePosition(jumper1.Position + glm::vec3(jumper1.Right * flashlightJumperOffset.x) + glm::vec3(jumper1.Up * flashlightJumperOffset.y) + glm::vec3(jumper1.Front * flashlightJumperOffset.z));
-		jumperFlashLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
+		//jumperFlashLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 		
 		rotatingLight.updatePosition(glm::vec3(sin(glfwGetTime() * 0.6f) * 10.0f, cos(glfwGetTime() * 0.3f) * 7.0f, sin(glfwGetTime()) * 8.0f));
-		rotatingLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
+		//rotatingLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 		//sunLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 		waterStargateLight.updatePosition(stargatePos);
-		waterStargateLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
+		//waterStargateLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
 
 		
 		//2nd render pass: outlining of the jumper

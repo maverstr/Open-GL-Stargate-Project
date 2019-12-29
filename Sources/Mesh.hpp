@@ -108,7 +108,7 @@ public:
 			shader.setFloat("material.mixRatio", 1.0);
 		}
 		else {//if there are texture maps, base color is less important
-			shader.setFloat("material.mixRatio", 0.1);
+			shader.setFloat("material.mixRatio", 0.5);
 		}
 		// draw mesh
 		glBindVertexArray(VAO);
