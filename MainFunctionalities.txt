@@ -3,21 +3,23 @@ The drawing is done using instances to increase performance !!!
 - Asteroid drawing using instancing as well
 - cubemap/skybox in space
 - Blinn-Phong's light algorithm (ambient, diffuse, specular)
+- use of emission maps for other light sources on the object itself (as well as diffuse and specular maps)
 - light attenuation with distance (makes sense as we are in space, very long distance but not highly realistic)
 - 3 different types of lightsources (point light, directional, spotlight/flashlight) with their own class
-- use of emission maps for other light sources on the object itself (as well as diffuse and specular maps)
 - 6DOF camera with smooth controls, and "sprint"
 - Model and Mesh class modified for importantion of OBJ files and use of their base materials as well as multiple texture and other maps
 - use of face culling when relevant for a performance increase
 - reflection map (for metallic effect of the ship) using reflection mapping
-- outlining of the model using stencil buffer
-- (background music)
+- outlining of the model using stencil buffer to allow to see it through other objects
+- background music
 
 - sun shader, moving with time and lighting corona
 - water ripple shader in stargate, sum of 4 circular wave and a spiral, moving with time
 - explosion effect using the normals and geometry shader
 - launchable missile with cooldown
 - particle effects for the missile
+
+- reflection and refraction for the planet can be toggled
 
 keybindings:
 Camera Movements:
@@ -33,11 +35,19 @@ Jumper (ship):
 	Arrows - orient Jumper (pitch & roll)
 	+, - - orient Jumper (Yaw)
 
-Miscellaneous:
 	K - explode Jumper
 	L - launch missile (10 sec cooldown)
-	O - outline Jumper
-	P - pause Music
-	1,2,3 - Wireframe modes
+
+	O - outline Jumper (we can see the ship through objects)
+
+Technical Demo:
+	I - Toggle planet as a crystal (refraction only)
+	U - Toggle planet as metal (reflection added to the output color)
 	
+Music: 
+	P - pause Music
+
+Miscellaneous:
+	1,2,3 - Wireframe modes
+
 

@@ -8,14 +8,17 @@ struct Material {
 	sampler2D texture_height1;
 	sampler2D texture_emission1;
 	sampler2D texture_reflectionMap;
-	int reflection;
+	
 	float shininess;
 	vec3 ambient; //material properties
 	vec3 diffuse;
 	vec3 specular;
 	vec3 emission;
-	float mixRatio; //use of texture combiner to render them all
+	int reflection;
+	int reflectionMap;
 	float refractionRatio;
+	
+	float mixRatio; //use of texture combiner to render them all
 };
 
 struct Light {
@@ -71,8 +74,8 @@ void main()
 	result += calcEmission();
 
 	//environment mapping
-	result += calcReflection(norm, ViewDirEnvMapping) *3.0f;
-	//result += calcRefraction(norm, ViewDirEnvMapping, material.refractionRatio);
+	result += calcReflection(norm, ViewDirEnvMapping) *3.0f; //used only in the jumper with a reflection map
+	result += calcRefraction(norm, ViewDirEnvMapping, material.refractionRatio); //not used in the models (ratio = 0)
     FragColor = vec4(result, 1.0);
 	//FragColor = vec4(test,1.0f); debug purpose
 }
@@ -131,19 +134,23 @@ vec3 calcEmission(void){
 }
 
 vec3 calcReflection(vec3 normal, vec3 viewDir){
-	//refraction
+	//reflection
+	vec3 reflection = vec3(0.0f,0.0f,0.0f);
+	if(material.reflection == 1){
 	vec3 R = reflect(viewDir, normal); //using OpenGL built-in function, algebra is similar to specular light
-	vec3 reflection = vec3(texture(skybox, R).rgb);
-	if(material.reflection == 1)
+	reflection = vec3(texture(skybox, R).rgb);
+	if(material.reflectionMap == 1)
 		reflection = reflection * texture(material.texture_reflectionMap, TexCoords).x; //map for reflection values
-	else
-		reflection = vec3(0,0,0);
+	}
 	return reflection;
 }
 
 vec3 calcRefraction(vec3 normal, vec3 viewDir, float refractionRatio){
 	//refraction
+	vec3 refraction = vec3(0.0f,0.0f,0.0f);
+	if(material.refractionRatio != 0.0f){
 	vec3 R = refract(viewDir, normal, refractionRatio); //using built-in fct
-	vec3 refraction = vec3(texture(skybox, R).rgb);
+	refraction = vec3(texture(skybox, R).rgb);
+	}
 	return refraction;
 }

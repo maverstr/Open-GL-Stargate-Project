@@ -129,6 +129,8 @@ int starsCount = 0;
 //planet
 glm::vec3 planetPos = glm::vec3(-400.0f, -150.0f, 120.0f);
 float planetRotation = 0.0f;
+int planetReflection = 0;
+float planetRefractionRatio = 0.0f;
 
 //sun
 glm::vec3 sunPos = glm::vec3(-200.0f, -150.0f, -100.0f);
@@ -396,8 +398,9 @@ int main(int argc, char* argv[]) {
 		glActiveTexture(GL_TEXTURE15);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
 		stargateShader.setInteger("skybox", 15);
-		stargateShader.setFloat("refractionRatio", 0.2f);
+		stargateShader.setFloat("material.refractionRatio", 0.0f);
 		stargateShader.setInteger("material.reflection", 0);
+		jumperShader.setInteger("material.reflectionMap", 0);
 		glm::mat4 stargateModel = glm::translate(glm::mat4(1.0f), stargatePos);
 		stargateShader.setMatrix4("model", stargateModel);
 		stargateShader.setMatrix4("view", viewMatrix);
@@ -463,6 +466,11 @@ int main(int argc, char* argv[]) {
 		planetShader.setMatrix4("projection", projectionMatrix);
 		planetShader.setVector3f("viewPos", camera.Position);
 		planetShader.setFloat("material.shininess", 16.0f);
+		glActiveTexture(GL_TEXTURE15);
+		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+		planetShader.setInteger("skybox", 15);
+		planetShader.setFloat("material.refractionRatio", planetRefractionRatio);
+		planetShader.setInteger("material.reflection", planetReflection);
 		planetShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
 		for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
 			(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
@@ -531,7 +539,8 @@ int main(int argc, char* argv[]) {
 		else {
 			jumperShader.setFloat("explosionDistance", -1);
 		}
-		jumperShader.setFloat("refractionRatio", 0.0f);
+		jumperShader.setFloat("material.refractionRatio", 0.0f);
+		jumperShader.setInteger("material.reflectionMap", 1);
 		jumperShader.setInteger("material.reflection", 1);
 		jumperShader.setMatrix4("model", moveModel(jumper1, false));
 		jumperShader.setMatrix4("view", viewMatrix);
@@ -1021,6 +1030,26 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 			missileLaunched = true;
 			boolCaptureMissileSettings = true;
 		}
+	}
+
+	//Planet reflection toggle
+	if (keys[GLFW_KEY_U]) {
+		if (planetReflection == 0) {
+			planetReflection = 1;
+			planetRefractionRatio = 0.0f; //deactivate refraction as well
+		}
+		else
+			planetReflection = 0;
+	}
+
+	//Planet refraction toggle
+	if (keys[GLFW_KEY_I]) {
+		if (planetRefractionRatio == 0.0f) {
+			planetRefractionRatio = 0.85f;
+			planetReflection = 0; //deactivate reflection as well
+		}
+		else
+			planetRefractionRatio = 0.0f;
 	}
 
 	//sound

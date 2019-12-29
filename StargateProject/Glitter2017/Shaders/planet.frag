@@ -7,6 +7,9 @@ struct Material {
 	vec3 ambient; //material properties
 	vec3 diffuse;
 	vec3 specular;
+
+	int reflection;
+	float refractionRatio;
 };
 
 struct Light {
@@ -41,6 +44,10 @@ uniform Material material;
 uniform Light light[NR_POINT_LIGHTS]; 
 uniform int lightCounter;
 
+uniform samplerCube skybox; //for refraction
+
+vec3 calcRefraction(vec3 normal, vec3 viewDir, float refractionRatio);
+vec3 calcReflection(vec3 normal, vec3 viewDir);
 vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir);
 
 void main()
@@ -55,6 +62,10 @@ void main()
 		result += calcFragFromALightSource(light[i], norm, fs_in.FragPos, viewDir);    
     }
 
+	//environment mapping
+	result += calcReflection(norm, ViewDirEnvMapping) *2.5f; //used only if triggered for demo purpose
+	if(material.refractionRatio != 0.0)
+		result = calcRefraction(norm, ViewDirEnvMapping, material.refractionRatio);  //used only if triggered for demo purpose, only refraction
     FragColor = vec4(result, 1.0);
 	//FragColor = vec4(test,1.0f); debug purpose
 }
@@ -103,4 +114,25 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 	////////////////////////////RESULT////////////////////////////////////
 	vec3 result = (ambient*0.2f + diffuse *1.8 + specular*0.8) * attenuation;
 	return result;
+}
+
+
+vec3 calcReflection(vec3 normal, vec3 viewDir){
+	//refraction
+	vec3 reflection = vec3(0.0f);
+	if(material.reflection == 1){
+	vec3 R = reflect(viewDir, normal); //using OpenGL built-in function, algebra is similar to specular light
+	reflection = vec3(texture(skybox, R).rgb);
+	}
+	return reflection;
+}
+
+vec3 calcRefraction(vec3 normal, vec3 viewDir, float refractionRatio){
+	//refraction
+	vec3 refraction = vec3(0.0f);
+	if(material.refractionRatio != 0.0f){
+	vec3 R = refract(viewDir, normal, refractionRatio); //using built-in fct
+	refraction = vec3(texture(skybox, R).rgb);
+	}
+	return refraction;
 }
