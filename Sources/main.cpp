@@ -72,6 +72,7 @@ glm::mat4 createMVPMatrix(glm::mat4 model, glm::mat4 view, glm::mat4 projection)
 const int windowWidth = 1690;
 const int windowHeight = 1050;
 const char* windowTitle = "Stargate Project";
+bool MSAA = true; 
 
 
 bool translationMovement[6]; //up down left right forward backward
@@ -165,6 +166,7 @@ int main(int argc, char* argv[]) {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
+	glfwWindowHint(GLFW_SAMPLES, 4); //MSAA (hint GLFW for a multisample buffer with 4 samples instead of normal color buffer)
 	auto mWindow = glfwCreateWindow(windowWidth, windowHeight, windowTitle, nullptr, nullptr);
 	// Check for Valid Context
 	if (mWindow == nullptr) {
@@ -193,6 +195,9 @@ int main(int argc, char* argv[]) {
 	glEnable(GL_DEPTH_TEST);
 	// Accept fragment if it closer to the camera than the former one
 	glDepthFunc(GL_LESS);
+
+	MSAA = true;
+	glEnable(GL_MULTISAMPLE); //activates MSAA
 
 	glEnable(GL_PROGRAM_POINT_SIZE); //allows to modify the point size (used in stars)
 
@@ -1055,6 +1060,18 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 	//sound
 	if (keys[GLFW_KEY_P])
 		musicBool = true;
+
+	//MSAA
+	if (keys[GLFW_KEY_N]) {
+		if (MSAA) {
+			glDisable(GL_MULTISAMPLE);
+			MSAA = false;
+		}
+		else {
+			glEnable(GL_MULTISAMPLE);
+			MSAA = true;
+		}
+	}
 
 	//Wireframe or point mode 
 	if (keys[GLFW_KEY_1] || keys[GLFW_KEY_KP_1])

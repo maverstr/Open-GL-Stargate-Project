@@ -20,6 +20,7 @@ The drawing is done using instances to increase performance !!!
 - particle effects for the missile
 
 - reflection and refraction for the planet can be toggled
+- very basic implementation of MSAA (anti-aliasing)
 
 keybindings:
 Camera Movements:
@@ -43,6 +44,7 @@ Jumper (ship):
 Technical Demo:
 	I - Toggle planet as a crystal (refraction only)
 	U - Toggle planet as metal (reflection added to the output color)
+	N- toggle MSAA
 	
 Music: 
 	P - pause Music
