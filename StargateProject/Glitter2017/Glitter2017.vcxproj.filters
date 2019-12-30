@@ -151,5 +151,11 @@
     <None Include="Shaders\lightBulbGlass.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Shaders\weirdCube.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\weirdCube.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

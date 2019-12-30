@@ -22,8 +22,9 @@ The drawing is done using instances to increase performance !!!
 - reflection and refraction for the planet can be toggled
 - very basic implementation of MSAA (anti-aliasing)
 - use of blending for transparency of a light bulb glass
+- normal mapping
 
-keybindings:
+keybindings (azerty keyboard):
 Camera Movements:
 	ZQSD - move Camera
 	X, SPACE - move Camera vertically
@@ -35,22 +36,24 @@ Jumper (ship):
 	H, F - move laterally
 	Y, B - move vertically
 	Arrows - orient Jumper (pitch & roll)
-	+, - - orient Jumper (Yaw)
+	+, - (numpad) - orient Jumper (Yaw)
 
 	K - explode Jumper
 	L - launch missile (10 sec cooldown)
 
-	O - outline Jumper (we can see the ship through objects)
+	O - outline Jumper (can see it through other objects)
 
 Technical Demo:
 	I - Toggle planet as a crystal (refraction only)
-	U - Toggle planet as metal (reflection added to the output color)
+	U - Toggle planet as chrome (reflection added to the output color)
 	N- toggle MSAA
+	V - toggle Normal Mapping on "weird cube"
 	
 Music: 
 	P - pause Music
 
 Miscellaneous:
 	1,2,3 - Wireframe modes
+	W - deactivate VSync and show FPS
 
 

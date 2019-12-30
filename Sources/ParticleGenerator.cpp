@@ -8,7 +8,7 @@
 ******************************************************************/
 
 
-//used in this project with some tweaks
+//This code is used as part of this project with multiple changes/tweaks (especially concerning the position, spawning of the particles and added randomization system)
 
 #include "ParticleGenerator.h"
 #include <iostream>
@@ -34,7 +34,8 @@ void ParticleGenerator::Update(GLfloat dt, glm::vec3 pos, glm::vec3 velocityDire
 		p.Life -= dt; // reduce life
 		if (p.Life > 0.0f)
 		{	// particle is alive, thus update
-			p.Position -= p.Velocity * dt * (0.5f + rand()%100 /100.0f);
+			//life delta: 2000 particles, 8 spawns per frame, 1 of life at start => 0.004 of delta per frame, 250 frames of life
+			p.Position -= p.Velocity * dt * (0.5f + rand()%100 /100.0f); //velocity multipled by a random between 0.5 and 1.5
 			p.Color.a -= dt * 0.95f * (0.5f + rand() % 100 / 100.0f); //progressive transparency
 			p.Color.g += dt * 0.8f * (0.5f + rand() % 100 / 100.0f); //progressive yellow by increasing green up to 0.8
 		}

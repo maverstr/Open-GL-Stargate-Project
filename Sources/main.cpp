@@ -48,6 +48,7 @@ void printMatrix(glm::mat4 m);
 void printVec3(glm::vec3 v);
 void showFPS(void);
 GLuint loadTexture(char const* path);
+bool showFPSBool = false;
 
 //VAO Creations
 GLuint createAxisVAO(void);
@@ -111,6 +112,7 @@ bool isExploded = false;
 
 //stargate
 glm::vec3 stargatePos = glm::vec3(-15.0f, -15.0f, -5.0f);
+float stargateAngle = 0.0f;
 
 //missile
 glm::vec3 missilePosition = glm::vec3(0.0f);
@@ -138,6 +140,10 @@ glm::vec3 sunPos = glm::vec3(-200.0f, -150.0f, -100.0f);
 
 //asteroids
 unsigned int asteroidAmount = 10000;
+
+//weird cube
+int weirdCubeNormalMapping = 1;
+float weirdCubeAngle = 0.0f;
 
 
 
@@ -253,29 +259,43 @@ int main(int argc, char* argv[]) {
 	Shader lightBulbGlassShader = Shader("Shaders/lightBulbGlass.vert", "Shaders/lightBulbGlass.frag");
 	lightBulbGlassShader.compile();
 
+	Shader weirdCubeShader = Shader("Shaders/weirdCube.vert", "Shaders/weirdCube.frag");
+	weirdCubeShader.compile();
+
 
 	//Textures
 	GLuint skyboxTexture = createCubeMapTexture();
 	GLuint jumperReflectionMap = loadTexture("Models/reflectionMapJumper.png");
 	GLuint sunTexture = loadTexture("Models/2k_sun.jpg");
+	GLuint weirdCubeNormalMapTexture = loadTexture("Models/weirdCubeNormalMap.png");
 
 	//VAO instanciation
 	GLuint AxisVAO = createAxisVAO();
 	GLuint skyboxVAO = createCubeMapVAO();
 	GLuint starsVAO = createStarsVAO(&starsCount);
 	//GLuint starsVAO = createStarsVAO(&starsCount, 100); //limit max number of stars to 100
+
+	//Models
 	Model StargateModel = Model("Models/Stargate.obj"); //Stargate
 	Model waterPlaneStargateModel = Model("Models/waterPlaneStargate.obj");
+
 	Model JumperModel = Model("Models/Jumper.obj");
 	Jumper jumper1 = Jumper(&JumperModel);
+
 	Model PlanetModel = Model("Models/planet.obj");
+
 	Model AsteroidModel = Model("Models/rock.obj");
 	createAsteroidVAO(asteroidAmount, AsteroidModel, planetPos); //no return value as there is one VAO per asteroid...
+
 	Model SunModel = Model("Models/Sun.obj");
+
 	Model missileModel = Model("Models/missile.obj");
+
 	Model lightBulbCenterModel = Model("Models/lightBulbCenter.obj");
 	Model lightBulbGlassModel = Model("Models/lightBulbGlass.obj");
-	Model jumperFlashLightModel = Model("Models/JumperFlashLight.obj");
+
+	Model weirdCubeModel = Model("Models/weirdCube.obj");
+
 
 	//particles
 	ParticleGenerator* Particles;
@@ -317,6 +337,9 @@ int main(int argc, char* argv[]) {
 			music->setIsPaused(!music->getIsPaused());
 			musicBool = false;
 		}
+
+		if (showFPSBool)
+			showFPS();
 
 
 		//Handle movements
@@ -370,8 +393,6 @@ int main(int argc, char* argv[]) {
 
 		//	camera.updatePositionFPSView(jumper1.Position + +glm::vec3(jumper1.Right * jumperFirstPersonOffset.x) + glm::vec3(jumper1.Up * jumperFirstPersonOffset.y) + glm::vec3(jumper1.Front * jumperFirstPersonOffset.z), - jumper1.Front);
 
-		//showFPS();
-
 		//Calculate coordinate systems every frame
 		modelMatrix = createModelMatrix();
 		viewMatrix = createViewMatrix();
@@ -415,8 +436,11 @@ int main(int argc, char* argv[]) {
 		stargateShader.setFloat("material.refractionRatio", 0.0f);
 		stargateShader.setInteger("material.reflection", 0);
 		jumperShader.setInteger("material.reflectionMap", 0);
-		glm::mat4 stargateModel = glm::translate(glm::mat4(1.0f), stargatePos);
-		stargateShader.setMatrix4("model", stargateModel);
+		stargateAngle -= 0.016f;
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(stargateAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		stargateShader.setMatrix4("model", modelMatrix);
 		stargateShader.setMatrix4("view", viewMatrix);
 		stargateShader.setMatrix4("projection", projectionMatrix);
 		stargateShader.setVector3f("viewPos", camera.Position);
@@ -431,7 +455,7 @@ int main(int argc, char* argv[]) {
 		StargateModel.Draw(stargateShader);
 
 		waterPlaneStargateShader.use();
-		waterPlaneStargateShader.setMatrix4("model", stargateModel);
+		waterPlaneStargateShader.setMatrix4("model", modelMatrix);
 		waterPlaneStargateShader.setMatrix4("view", viewMatrix);
 		waterPlaneStargateShader.setMatrix4("projection", projectionMatrix);
 		waterPlaneStargateShader.setVector3f("stargatePos", stargatePos);
@@ -519,6 +543,13 @@ int main(int argc, char* argv[]) {
 		missileShader.setMatrix4("view", viewMatrix);
 		missileShader.setMatrix4("projection", projectionMatrix);
 		missileShader.setMatrix4("model", createModelMissile(jumper1));
+		missileShader.setVector3f("viewPos", camera.Position);
+		missileShader.setFloat("material.shininess", 16.0f);
+		missileShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
+		for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
+			(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
+		}
+
 		if (boolCaptureMissileSettings) { //need to store jumper direction and orientation for the missile to follow its path
 			//so i use a flag triggered by glfw keys
 			captureMissileSettings(jumper1);
@@ -529,6 +560,70 @@ int main(int argc, char* argv[]) {
 			missileLaunched = false;
 		}
 		missileModel.Draw(missileShader);
+
+		
+		//weirdCubes
+		glEnable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+		weirdCubeShader.use();
+		weirdCubeShader.setMatrix4("view", viewMatrix);
+		weirdCubeShader.setMatrix4("projection", projectionMatrix);
+		weirdCubeShader.setVector3f("viewPos", camera.Position);
+		glActiveTexture(GL_TEXTURE12);
+		glBindTexture(GL_TEXTURE_2D, weirdCubeNormalMapTexture);
+		weirdCubeShader.setInteger("normalMap", 12);
+		weirdCubeShader.setFloat("material.shininess", 16.0f);
+		weirdCubeShader.setInteger("normalMapping", weirdCubeNormalMapping);
+		weirdCubeShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
+		for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
+			(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
+		}
+		glActiveTexture(GL_TEXTURE0);
+
+		weirdCubeAngle -= 0.25f;
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos(glfwGetTime() * 0.1f) * 20.0f, sin(glfwGetTime() * 0.1f) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		weirdCubeShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(weirdCubeShader);
+
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(60.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(60.0)) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		weirdCubeShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(weirdCubeShader);
+
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(120.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(120.0)) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		weirdCubeShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(weirdCubeShader);
+
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(180.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(180.0)) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		weirdCubeShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(weirdCubeShader);
+
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(240.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(240.0)) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		weirdCubeShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(weirdCubeShader);
+
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(300.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(300.0)) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		weirdCubeShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(weirdCubeShader);
+
+		//static one
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix[3] = glm::vec4(10.0f, 5.0f, 0.0f, 1.0f);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		weirdCubeShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(weirdCubeShader);
+
+
 		
 		//jumper model drawing
 		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
@@ -595,28 +690,6 @@ int main(int argc, char* argv[]) {
 		lightBulbGlassShader.setMatrix4("projection", projectionMatrix);
 		lightBulbGlassShader.setMatrix4("model", modelMatrix);
 		lightBulbGlassModel.Draw(lightBulbGlassShader);
-
-		//draw jumper flashlight
-		glDisable(GL_CULL_FACE);
-		lightBulbCenterShader.use();
-		lightBulbCenterShader.setMatrix4("view", viewMatrix);
-		lightBulbCenterShader.setMatrix4("projection", projectionMatrix);
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = jumper1.rotMatTotal;
-		modelMatrix[3] = glm::vec4(jumperFlashLight.Position);
-		
-		lightBulbCenterShader.setMatrix4("model", modelMatrix);
-		jumperFlashLightModel.Draw(lightBulbCenterShader);
-
-		/*
-		//draw light Bulb Glass (blending) for jumper flashlight
-		glEnable(GL_CULL_FACE); //needs to be turned ON here otherwise the blending will mess up with the texture on the other side of the glass.
-		lightBulbGlassShader.use();
-		lightBulbGlassShader.setMatrix4("view", viewMatrix);
-		lightBulbGlassShader.setMatrix4("projection", projectionMatrix);
-		lightBulbGlassShader.setMatrix4("model", modelMatrix);
-		lightBulbGlassModel.Draw(lightBulbGlassShader);
-		*/
 
 		modelMatrix = glm::mat4(1.0f);
 		lightShader.use();
@@ -1025,12 +1098,14 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 		glfwSetWindowShouldClose(window, GL_TRUE);
 
 	// V-SYNC
-	if (keys[GLFW_KEY_P]) {
+	if (keys[GLFW_KEY_Z]) {
 		static bool vsync = true;
 		if (vsync) {
+			showFPSBool = false;
 			glfwSwapInterval(1);
 		}
 		else {
+			showFPSBool = true;
 			glfwSwapInterval(0);
 		}
 		vsync = !vsync;
@@ -1118,6 +1193,14 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 			glEnable(GL_MULTISAMPLE);
 			MSAA = true;
 		}
+	}
+
+	//Weird cube normal mapping
+	if (keys[GLFW_KEY_V]) {
+		if (weirdCubeNormalMapping == 1)
+			weirdCubeNormalMapping = 0;
+		else
+			weirdCubeNormalMapping = 1;
 	}
 
 	//Wireframe or point mode 
