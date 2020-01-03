@@ -76,12 +76,16 @@ void drawJumperOutlining();
 //movements
 void movementHandler();
 
+//framebuffer pov
+bool followCameraPOV = true;
+
 //Coordinate systems
 glm::mat4 moveModel(Jumper jumper, bool outlining);
 glm::mat4 createModelMissile(Jumper jumper);
 void captureMissileSettings(Jumper jumper);
 glm::mat4 createProjectionMatrix(void);
-glm::mat4 createViewMatrix(void);
+glm::mat4 createViewMatrix1(void);
+glm::mat4 createViewMatrix2(void);
 glm::mat4 createModelMatrix(void);
 
 
@@ -112,6 +116,16 @@ float baseCameraMovementSpeed = camera.MovementSpeed;
 float FastCameraMovementSpeed = baseCameraMovementSpeed * 3;
 bool SprintActivated = false;
 bool cameraMovement[6];
+
+//camera1
+Camera camera1(glm::vec3(22.0f, 16.0f, -2.0f));
+//Camera2 (second POV, following jumper)
+Camera camera2(glm::vec3(22.0f, 16.0f, -2.0f));
+int grayscale = 0;
+int kernel = 0;
+int blur = 0;
+int sharpen = 0;
+int edgeDetection = 0;
 
 //lights
 vector<LightSource*> lightArray; //array of pointers to all light sources. REMEMBER TO DELETE POINTERS AS I DELETE THE OBJECTS
@@ -177,7 +191,7 @@ weirdCubeShader, framebufferShader;
 GLuint skyboxTexture, jumperReflectionMap, sunTexture, weirdCubeNormalMapTexture;
 
 //VAO
-GLuint AxisVAO, skyboxVAO, starsVAO;
+GLuint AxisVAO, skyboxVAO, starsVAO, quadVAO;
 
 //Models
 Model StargateModel, waterPlaneStargateModel, JumperModel, PlanetModel, AsteroidModel, SunModel, missileModel, lightBulbCenterModel,
@@ -315,6 +329,7 @@ int main(int argc, char* argv[]) {
 	AxisVAO = createAxisVAO();
 	skyboxVAO = createCubeMapVAO();
 	starsVAO = createStarsVAO(&starsCount);
+	quadVAO = createFramebufferQuadVAO();
 
 	//Models
 	StargateModel = Model("Models/Stargate.obj"); //Stargate
@@ -410,61 +425,99 @@ int main(int argc, char* argv[]) {
 		//Handle movements
 		movementHandler();
 
+		//the whole render process in .. steps:
+		//1)render the scene in a framebuffer that writes color to a texture.(using camera2)
+		//2)the scene is rendered again (camera1) but this time in the default framebuffer and fills the entire screen.
+		//3)The first scene is then rendered on a quad set up in the upper right corner in NDC.
+		//4)An additional pass is required to draw the outline of the jumper by using the stencil buffer for the default framebuffer.
+		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+		glEnable(GL_DEPTH_TEST);
+		camera.copyThisCamera(camera2); //set the camera with the attributes of cam2
 		//Calculate coordinate systems every frame
-		viewMatrix = createViewMatrix();
+		viewMatrix = createViewMatrix2();
 		projectionMatrix = createProjectionMatrix();
+		//skybox
+		drawSkybox();
+		//Axis drawing
+		drawAxis();
+		//stargate model drawing
+		drawStargate();
+		//draw Sun
+		drawSun();
+		//planet drawing
+		drawPlanet();
+		// draw asteroides
+		drawAsteroids();
+		//particles update, must be rendered before missile and jumper otherwise will be rendered above
+		drawParticles();
+		// draw missile
+		drawMissile();
+		//weirdCubes
+		drawWeirdCubes();
+		//jumper model drawing
+		drawJumper();
+		//Stars drawing
+		drawStars();
+		//draw light Bulb (Center and glass with blending)
+		drawLightBulb(rotatingLight.Position);
+		if (jumperOutlining) {
+			drawJumperOutlining();
+		}
 
-		// Background Fill Color
+
+		glBindFramebuffer(GL_FRAMEBUFFER, 0); // back to default framebuffer
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
 		glStencilMask(0x00); //makes sure we don't update stencil buffer by mistake
-
-
-		//SKYBOX (could be drawn last to optimize performance by not rendering fragments that do not pass the depth test)
+		glEnable(GL_DEPTH_TEST);
+		camera.copyThisCamera(camera1);//set the camera with the attributes of cam1
+		//Calculate coordinate systems every frame
+		viewMatrix = createViewMatrix1();
+		projectionMatrix = createProjectionMatrix();
+		//skybox
 		drawSkybox();
-
 		//Axis drawing
 		drawAxis();
-	
 		//stargate model drawing
 		drawStargate();
-
 		//draw Sun
 		drawSun();
-
 		//planet drawing
 		drawPlanet();
-		
 		// draw asteroides
 		drawAsteroids();
-
 		//particles update, must be rendered before missile and jumper otherwise will be rendered above
 		drawParticles();
-
 		// draw missile
 		drawMissile();
-
 		//weirdCubes
 		drawWeirdCubes();
-		
 		//jumper model drawing
 		drawJumper();
-
-		
 		//Stars drawing
 		drawStars();
-		
-		//light drawing
-
 		//draw light Bulb (Center and glass with blending)
 		drawLightBulb(rotatingLight.Position);
-
-
 		//2nd render pass: outlining of the jumper
 		if (jumperOutlining) {
 			drawJumperOutlining();
 		}
 
+		if (followCameraPOV) {
+		glStencilFunc(GL_ALWAYS, 1, 0xFF);
+		framebufferShader.use();
+		framebufferShader.setInteger("grayscale", grayscale);
+		framebufferShader.setInteger("kernel", kernel);
+		framebufferShader.setInteger("sharpen", sharpen);
+		framebufferShader.setInteger("blur", blur);
+		framebufferShader.setInteger("edgeDetection", edgeDetection);
+		glBindVertexArray(quadVAO);
+		glDisable(GL_DEPTH_TEST);
+		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 
 		//lights position update (and debug drawing)
 		lightShader.use();
@@ -711,14 +764,14 @@ void createAsteroidVAO(int asteroidAmount, Model asteroidModel, glm::vec3 planet
 }
 
 GLuint createFramebufferQuadVAO() {
-	float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+	float quadVertices[] = { // vertex attributes for a quad that fills a part of the screen in Normalized Device Coordinates.
 	// positions   // texCoords
-	-1.0f,  1.0f,  0.0f, 1.0f,
-	-1.0f, -1.0f,  0.0f, 0.0f,
-	 1.0f, -1.0f,  1.0f, 0.0f,
+	0.5f,  1.0f,  0.0f, 1.0f,
+	0.5f, 0.5f,  0.0f, 0.0f,
+	 1.0f, 0.5f,  1.0f, 0.0f,
 
-	-1.0f,  1.0f,  0.0f, 1.0f,
-	 1.0f, -1.0f,  1.0f, 0.0f,
+	0.5f,  1.0f,  0.0f, 1.0f,
+	 1.0f, 0.5f,  1.0f, 0.0f,
 	 1.0f,  1.0f,  1.0f, 1.0f
 	};
 
@@ -774,22 +827,16 @@ void captureMissileSettings(Jumper jumper) { //called when missile launched to s
 	missileTimeCounter = glfwGetTime();
 }
 
-glm::mat4 createViewMatrix(void) {
+glm::mat4 createViewMatrix1(void) {
 	glm::mat4 ViewMat = camera.GetViewMatrix();
 	return ViewMat;
 }
 
-glm::mat4 createViewMatrixAutoRotation(void) {
-	float radius = 10.0f;
-	float camX = sin(glfwGetTime() * 0.6f) * radius;
-	float camY = cos(glfwGetTime() * 0.3f) * radius;
-	float camZ = sin(glfwGetTime()) * radius;
-	glm::vec3 camPos = glm::vec3(camX, camY, camZ);
-	glm::vec3 camLooksAt = glm::vec3(0, 0, 0);
-	glm::vec3 headOrientation = glm::vec3(0, 1, 0);
-	glm::mat4 viewMat = glm::lookAt(camPos, camLooksAt, headOrientation);
-	return viewMat;
+glm::mat4 createViewMatrix2(void) {
+	glm::mat4 ViewMat = glm::lookAt(camera.Position, camera.Position + camera.Front, -glm::vec3(jumper1.Up));
+	return ViewMat;
 }
+
 
 glm::mat4 createProjectionMatrix(void) {
 	float aspectRatio = (float) windowWidth / (float) windowHeight;
@@ -981,6 +1028,74 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 			weirdCubeNormalMapping = 1;
 	}
 
+	//follow Camera POV (framebuffer)
+	if (keys[GLFW_KEY_J]) {
+		followCameraPOV = !followCameraPOV;
+	}
+
+	//Options for post-processing effects on camera2
+	if (keys[GLFW_KEY_KP_7]) {
+		if (grayscale == 1) {
+			grayscale = 0;
+			kernel = 0;
+		}
+		else {
+			grayscale = 1;
+			kernel = 0;
+		}
+	}
+
+	if (keys[GLFW_KEY_KP_4]) {
+		if (sharpen == 1) {
+			sharpen = 0;
+			grayscale = 0;
+			kernel = 0;
+			edgeDetection = 0;
+			blur = 0;
+		}
+		else {
+			sharpen = 1;
+			kernel = 1;
+			blur = 0;
+			grayscale = 0;
+			edgeDetection = 0;
+		}
+	}
+
+	if (keys[GLFW_KEY_KP_5]) {
+		if (blur == 1) {
+			blur = 0;
+			grayscale = 0;
+			kernel = 0;
+			edgeDetection = 0;
+			blur = 0;
+		}
+		else {
+			blur = 1;
+			kernel = 1;
+			sharpen = 0;
+			grayscale = 0;
+			edgeDetection = 0;
+		}
+	}
+
+	if (keys[GLFW_KEY_KP_6]) {
+		if (edgeDetection == 1) {
+			edgeDetection = 0;
+			grayscale = 0;
+			kernel = 0;
+			blur = 0;
+			blur = 0;
+		}
+		else {
+			edgeDetection = 1;
+			kernel = 1;
+			sharpen = 0;
+			grayscale = 0;
+			blur = 0;
+		}
+	}
+
 	//Wireframe or point mode 
 	if (keys[GLFW_KEY_1] || keys[GLFW_KEY_KP_1])
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -1019,12 +1134,12 @@ void mouse_callback(GLFWwindow* window, double xpos, double ypos)
 	float yoffset = lastY - ypos; // reversed since y-coordinates go from bottom to top
 	lastX = xpos;
 	lastY = ypos;
-	camera.ProcessMouseMovement(xoffset, yoffset);
+	camera1.ProcessMouseMovement(xoffset, yoffset);
 }
 
 void scroll_callback(GLFWwindow* window, double /*xoffset*/, double yoffset)
 {
-	camera.ProcessMouseScroll(yoffset);
+	camera1.ProcessMouseScroll(yoffset);
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -1034,7 +1149,58 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	glViewport(0, 0, width, height);
 }
 
+void movementHandler() {
+	jumper1.clearMovement();
+	if (!isExploded) { //removes the ability to move if exploded
+		if (translationMovement[0])
+			jumper1.ProcessKeyboard(FORWARD, deltaTime);
+		if (translationMovement[1])
+			jumper1.ProcessKeyboard(BACKWARD, deltaTime);
+		if (translationMovement[2])
+			jumper1.ProcessKeyboard(LEFT, deltaTime);
+		if (translationMovement[3])
+			jumper1.ProcessKeyboard(RIGHT, deltaTime);
+		if (translationMovement[4])
+			jumper1.ProcessKeyboard(UP, deltaTime);
+		if (translationMovement[5])
+			jumper1.ProcessKeyboard(DOWN, deltaTime);
 
+		if (rotationMovement[0])
+			jumper1.ProcessKeyboard(PITCH_UP, deltaTime);
+		if (rotationMovement[1])
+			jumper1.ProcessKeyboard(PITCH_DOWN, deltaTime);
+		if (rotationMovement[2])
+			jumper1.ProcessKeyboard(ROLL_LEFT, deltaTime);
+		if (rotationMovement[3])
+			jumper1.ProcessKeyboard(ROLL_RIGHT, deltaTime);
+		if (rotationMovement[4])
+			jumper1.ProcessKeyboard(YAW_LEFT, deltaTime);
+		if (rotationMovement[5])
+			jumper1.ProcessKeyboard(YAW_RIGHT, deltaTime);
+	}
+	//sets the camera somewhere on the right side of the jumper
+	camera2.Position = jumper1.Position + glm::vec3(jumper1.Right) * 3.0f - glm::vec3(jumper1.Front) * 2.0f + glm::vec3(jumper1.Up) * 2.0f; 
+	camera2.setInitialLookAt(jumper1.Position + glm::vec3(jumper1.Front) * 200.0f); //makes the camera look far in front
+	if (cameraMovement[0])
+		camera1.ProcessKeyboard(CAM_FORWARD, deltaTime);
+	if (cameraMovement[1])
+		camera1.ProcessKeyboard(CAM_BACKWARD, deltaTime);
+	if (cameraMovement[2])
+		camera1.ProcessKeyboard(CAM_LEFT, deltaTime);
+	if (cameraMovement[3])
+		camera1.ProcessKeyboard(CAM_RIGHT, deltaTime);
+	if (cameraMovement[4])
+		camera1.ProcessKeyboard(CAM_UP, deltaTime);
+	if (cameraMovement[5])
+		camera1.ProcessKeyboard(CAM_DOWN, deltaTime);
+
+	if (SprintActivated) {
+		camera1.MovementSpeed = FastCameraMovementSpeed;
+	}
+	else {
+		camera1.MovementSpeed = baseCameraMovementSpeed;
+	}
+}
 //////////////////////////////////////////
 ////	  	  DRAWING FUNCTIONS        ///
 //////////////////////////////////////////
@@ -1317,56 +1483,6 @@ void drawJumperOutlining() {
 	JumperModel.Draw(modelOutliningShader);
 	glStencilMask(0xFF);
 	glEnable(GL_DEPTH_TEST);
-}
-
-void movementHandler() {
-	jumper1.clearMovement();
-	if (!isExploded) { //removes the ability to move if exploded
-		if (translationMovement[0])
-			jumper1.ProcessKeyboard(FORWARD, deltaTime);
-		if (translationMovement[1])
-			jumper1.ProcessKeyboard(BACKWARD, deltaTime);
-		if (translationMovement[2])
-			jumper1.ProcessKeyboard(LEFT, deltaTime);
-		if (translationMovement[3])
-			jumper1.ProcessKeyboard(RIGHT, deltaTime);
-		if (translationMovement[4])
-			jumper1.ProcessKeyboard(UP, deltaTime);
-		if (translationMovement[5])
-			jumper1.ProcessKeyboard(DOWN, deltaTime);
-
-		if (rotationMovement[0])
-			jumper1.ProcessKeyboard(PITCH_UP, deltaTime);
-		if (rotationMovement[1])
-			jumper1.ProcessKeyboard(PITCH_DOWN, deltaTime);
-		if (rotationMovement[2])
-			jumper1.ProcessKeyboard(ROLL_LEFT, deltaTime);
-		if (rotationMovement[3])
-			jumper1.ProcessKeyboard(ROLL_RIGHT, deltaTime);
-		if (rotationMovement[4])
-			jumper1.ProcessKeyboard(YAW_LEFT, deltaTime);
-		if (rotationMovement[5])
-			jumper1.ProcessKeyboard(YAW_RIGHT, deltaTime);
-	}
-	if (cameraMovement[0])
-		camera.ProcessKeyboard(CAM_FORWARD, deltaTime);
-	if (cameraMovement[1])
-		camera.ProcessKeyboard(CAM_BACKWARD, deltaTime);
-	if (cameraMovement[2])
-		camera.ProcessKeyboard(CAM_LEFT, deltaTime);
-	if (cameraMovement[3])
-		camera.ProcessKeyboard(CAM_RIGHT, deltaTime);
-	if (cameraMovement[4])
-		camera.ProcessKeyboard(CAM_UP, deltaTime);
-	if (cameraMovement[5])
-		camera.ProcessKeyboard(CAM_DOWN, deltaTime);
-
-	if (SprintActivated) {
-		camera.MovementSpeed = FastCameraMovementSpeed;
-	}
-	else {
-		camera.MovementSpeed = baseCameraMovementSpeed;
-	}
 }
 
 

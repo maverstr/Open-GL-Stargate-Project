@@ -69,6 +69,19 @@ public:
         return glm::lookAt(this->Position, this->Position + this->Front, -(this->Up));
     }
 
+	void copyThisCamera(Camera cam) {
+		this->Position = cam.Position;
+		this->Front = cam.Front;
+		this->Up = cam.Up;
+		this->Right = cam.Right;
+		this->WorldUp = cam.WorldUp;
+		this->Yaw = cam.Yaw;
+		this->Pitch = cam.Pitch;
+		this->MovementSpeed = cam.MovementSpeed;
+		this->MouseSensitivity = cam.MouseSensitivity;
+		this->Fov = cam.Fov;
+	}
+
     // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
     void ProcessKeyboard(Camera_Movement direction, GLfloat deltaTime)
     {

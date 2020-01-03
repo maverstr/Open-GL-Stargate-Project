@@ -23,6 +23,8 @@ The drawing is done using instances to increase performance !!!
 - very basic implementation of MSAA (anti-aliasing)
 - use of blending for transparency of a light bulb glass
 - normal mapping
+- framebuffer use to act as a secondary POV following the ship
+- use of kernel in the framebuffer for post-processing effects
 
 keybindings (azerty keyboard):
 Camera Movements:
@@ -48,6 +50,13 @@ Technical Demo:
 	U - Toggle planet as chrome (reflection added to the output color)
 	N- toggle MSAA
 	V - toggle Normal Mapping on "weird cube"
+	J - toggle framebuffer second POV
+
+Post-processing:
+	Numpad 4 - toggle Sharpening
+	Numpad 5 - toggle Blur
+	Numpad 6 - toggle edge detection
+	Numpad 7 - toggle grayscale
 	
 Music: 
 	P - pause Music
