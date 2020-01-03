@@ -50,9 +50,8 @@ public:
 
 
     // Constructor with vectors
-	Jumper(Model* model, glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH)
+	Jumper(glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f), GLfloat yaw = YAW, GLfloat pitch = PITCH)
     {
-		this->thisModel = model;
         this->Position = position;
         this->WorldUp = up;
         this->Yaw = yaw;
@@ -63,6 +62,11 @@ public:
 		this->Right = glm::vec4(0.0f, 0.0f, 1.0f, 1.0f);
         this->updateVectors();
     }
+
+	void setModel(Model* model) {
+		this->thisModel = model;
+	}
+
     // Processes input received from any keyboard-like input system. Accepts input parameter in the form of camera defined ENUM (to abstract it from windowing systems)
     void ProcessKeyboard(Jumper_Movement direction, GLfloat deltaTime)
     {

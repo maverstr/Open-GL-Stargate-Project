@@ -157,5 +157,11 @@
     <None Include="Shaders\weirdCube.vert">
       <Filter>Resource Files</Filter>
     </None>
+    <None Include="Shaders\framebuffer.frag">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="Shaders\framebuffer.vert">
+      <Filter>Resource Files</Filter>
+    </None>
   </ItemGroup>
 </Project>

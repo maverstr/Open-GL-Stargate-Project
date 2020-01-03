@@ -17,6 +17,7 @@ public:
 
 	// Constructor
 	Shader(const GLchar *vertexSource, const GLchar *fragmentSource, const GLchar *geometrySource = nullptr, const GLchar *tessCPath = nullptr, const GLchar *tessEPath = nullptr);
+	Shader();
 
 	// Sets the current shader as active
 	Shader& use();

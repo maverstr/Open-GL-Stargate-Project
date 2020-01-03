@@ -54,9 +54,27 @@ bool showFPSBool = false;
 GLuint createAxisVAO(void);
 GLuint createCubeMapVAO(void);
 GLuint createCubeMapTexture(void);
-GLuint createStarsVAO(int* starsCount, int maxStars = 0);
+GLuint createStarsVAO(int* starsCount);
 void createAsteroidVAO(int asteroidAmount, Model asteroidModel, glm::vec3 planetPos);
+GLuint createFramebufferQuadVAO(void);
 
+//draw calls
+void drawSkybox();
+void drawAxis();
+void drawStargate();
+void drawSun();
+void drawPlanet();
+void drawAsteroids();
+void drawParticles();
+void drawMissile();
+void drawWeirdCubes();
+void drawJumper();
+void drawStars();
+void drawLightBulb(glm::vec4 position);
+void drawJumperOutlining();
+
+//movements
+void movementHandler();
 
 //Coordinate systems
 glm::mat4 moveModel(Jumper jumper, bool outlining);
@@ -65,17 +83,15 @@ void captureMissileSettings(Jumper jumper);
 glm::mat4 createProjectionMatrix(void);
 glm::mat4 createViewMatrix(void);
 glm::mat4 createModelMatrix(void);
-glm::mat4 createMVPMatrix(glm::mat4 model, glm::mat4 view, glm::mat4 projection);
 
-//////////////////////////////////////////
-////         WINDOW PARAMETERS         ///
-//////////////////////////////////////////
+
+ // WINDOW PARAMETERS 
 const int windowWidth = 1690;
 const int windowHeight = 1050;
 const char* windowTitle = "Stargate Project";
 bool MSAA = true; 
 
-
+//movements jumper
 bool translationMovement[6]; //up down left right forward backward
 bool rotationMovement[6];
 float transX = 0;
@@ -102,6 +118,7 @@ vector<LightSource*> lightArray; //array of pointers to all light sources. REMEM
 int lightCounter = 0;
 
 //jumper
+Jumper jumper1;
 glm::vec3 flashlightJumperOffset = glm::vec3(0.0f, -1.27f, 5.5f);
 glm::vec3 jumperFirstPersonOffset = glm::vec3(0.0f, 0.0f, 5.5f);
 bool jumperOutlining = true;
@@ -113,6 +130,9 @@ bool isExploded = false;
 //stargate
 glm::vec3 stargatePos = glm::vec3(-15.0f, -15.0f, -5.0f);
 float stargateAngle = 0.0f;
+glm::vec3 distStargate = glm::vec3(0.0f);
+float distanceStargate = 0.0f;
+float angleStargateFOV = 0.0f;
 
 //missile
 glm::vec3 missilePosition = glm::vec3(0.0f);
@@ -137,6 +157,9 @@ float planetRefractionRatio = 0.0f;
 
 //sun
 glm::vec3 sunPos = glm::vec3(-200.0f, -150.0f, -100.0f);
+glm::vec3 distSun = glm::vec3(0.0f);
+float distanceSun = 0.0f;
+float angleSunFOV = 0.0f;
 
 //asteroids
 unsigned int asteroidAmount = 10000;
@@ -145,7 +168,23 @@ unsigned int asteroidAmount = 10000;
 int weirdCubeNormalMapping = 1;
 float weirdCubeAngle = 0.0f;
 
+//Shaders
+Shader axisShader, skyboxShader, stargateShader, waterPlaneStargateShader, jumperShader, modelOutliningShader, planetShader,
+sunShader, asteroidShader, starsShader, missileShader, lightShader, particleShader, lightBulbCenterShader, lightBulbGlassShader,
+weirdCubeShader, framebufferShader;
 
+//Textures
+GLuint skyboxTexture, jumperReflectionMap, sunTexture, weirdCubeNormalMapTexture;
+
+//VAO
+GLuint AxisVAO, skyboxVAO, starsVAO;
+
+//Models
+Model StargateModel, waterPlaneStargateModel, JumperModel, PlanetModel, AsteroidModel, SunModel, missileModel, lightBulbCenterModel,
+lightBulbGlassModel, weirdCubeModel;
+
+//particles
+ParticleGenerator* Particles;
 
 //Coordinate system matrix initialization
 glm::mat4 modelMatrix = glm::mat4(0);
@@ -214,96 +253,97 @@ int main(int argc, char* argv[]) {
 	glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE); //do nothing if stencil and depth tests fail (keep values) but replace with 1's if succeed
 
 	//Shaders
-	Shader axisShader = Shader("Shaders/axis.vert", "Shaders/axis.frag");
+	axisShader = Shader("Shaders/axis.vert", "Shaders/axis.frag");
 	axisShader.compile();
 
-	Shader skyboxShader = Shader("Shaders/skybox.vert", "Shaders/skybox.frag");
+	skyboxShader = Shader("Shaders/skybox.vert", "Shaders/skybox.frag");
 	skyboxShader.compile();
 
-	Shader stargateShader = Shader("Shaders/model.vert", "Shaders/model.frag", "Shaders/model.geom");
+	stargateShader = Shader("Shaders/model.vert", "Shaders/model.frag", "Shaders/model.geom");
 	stargateShader.compile();
 
-	Shader waterPlaneStargateShader = Shader("Shaders/waterPlaneStargate.vert", "Shaders/waterPlaneStargate.frag");
+	waterPlaneStargateShader = Shader("Shaders/waterPlaneStargate.vert", "Shaders/waterPlaneStargate.frag");
 	waterPlaneStargateShader.compile();
 
-	Shader jumperShader = Shader("Shaders/model.vert", "Shaders/model.frag", "Shaders/model.geom");
+	jumperShader = Shader("Shaders/model.vert", "Shaders/model.frag", "Shaders/model.geom");
 	jumperShader.compile();
 
-	Shader modelOutlining = Shader("Shaders/modelOutlining.vert", "Shaders/modelOutlining.frag");
-	modelOutlining.compile();
+	modelOutliningShader = Shader("Shaders/modelOutlining.vert", "Shaders/modelOutlining.frag");
+	modelOutliningShader.compile();
 
-	Shader planetShader = Shader("Shaders/planet.vert", "Shaders/planet.frag"); 
+	planetShader = Shader("Shaders/planet.vert", "Shaders/planet.frag"); 
 	planetShader.compile();
 
-	Shader sunShader = Shader("Shaders/sun.vert", "Shaders/sun.frag");
+	sunShader = Shader("Shaders/sun.vert", "Shaders/sun.frag");
 	sunShader.compile();
 
-	Shader asteroidShader = Shader("Shaders/asteroid.vert", "Shaders/asteroid.frag");
+	asteroidShader = Shader("Shaders/asteroid.vert", "Shaders/asteroid.frag");
 	asteroidShader.compile();
 
-	Shader starsShader = Shader("Shaders/stars.vert", "Shaders/stars.frag");
+	starsShader = Shader("Shaders/stars.vert", "Shaders/stars.frag");
 	starsShader.compile();
 	
-	Shader missileShader = Shader("Shaders/missile.vert", "Shaders/missile.frag");
+	missileShader = Shader("Shaders/missile.vert", "Shaders/missile.frag");
 	missileShader.compile();
 
-	Shader lightShader = Shader("Shaders/lightSource.vert", "Shaders/lightSource.frag");
+	lightShader = Shader("Shaders/lightSource.vert", "Shaders/lightSource.frag");
 	lightShader.compile();
 
-	Shader particleShader = Shader("Shaders/particle.vert", "Shaders/particle.frag");
+	particleShader = Shader("Shaders/particle.vert", "Shaders/particle.frag");
 	particleShader.compile();
 
-	Shader lightBulbCenterShader = Shader("Shaders/lightBulbCenter.vert", "Shaders/lightBulbCenter.frag");
+	lightBulbCenterShader = Shader("Shaders/lightBulbCenter.vert", "Shaders/lightBulbCenter.frag");
 	lightBulbCenterShader.compile();
 
-	Shader lightBulbGlassShader = Shader("Shaders/lightBulbGlass.vert", "Shaders/lightBulbGlass.frag");
+	lightBulbGlassShader = Shader("Shaders/lightBulbGlass.vert", "Shaders/lightBulbGlass.frag");
 	lightBulbGlassShader.compile();
 
-	Shader weirdCubeShader = Shader("Shaders/weirdCube.vert", "Shaders/weirdCube.frag");
+	weirdCubeShader = Shader("Shaders/weirdCube.vert", "Shaders/weirdCube.frag");
 	weirdCubeShader.compile();
+
+	framebufferShader = Shader("Shaders/framebuffer.vert", "Shaders/framebuffer.frag");
+	framebufferShader.compile();
 
 
 	//Textures
-	GLuint skyboxTexture = createCubeMapTexture();
-	GLuint jumperReflectionMap = loadTexture("Models/reflectionMapJumper.png");
-	GLuint sunTexture = loadTexture("Models/2k_sun.jpg");
-	GLuint weirdCubeNormalMapTexture = loadTexture("Models/weirdCubeNormalMap.png");
+	skyboxTexture = createCubeMapTexture();
+	jumperReflectionMap = loadTexture("Models/reflectionMapJumper.png");
+	sunTexture = loadTexture("Models/2k_sun.jpg");
+	weirdCubeNormalMapTexture = loadTexture("Models/weirdCubeNormalMap.png");
 
 	//VAO instanciation
-	GLuint AxisVAO = createAxisVAO();
-	GLuint skyboxVAO = createCubeMapVAO();
-	GLuint starsVAO = createStarsVAO(&starsCount);
-	//GLuint starsVAO = createStarsVAO(&starsCount, 100); //limit max number of stars to 100
+	AxisVAO = createAxisVAO();
+	skyboxVAO = createCubeMapVAO();
+	starsVAO = createStarsVAO(&starsCount);
 
 	//Models
-	Model StargateModel = Model("Models/Stargate.obj"); //Stargate
-	Model waterPlaneStargateModel = Model("Models/waterPlaneStargate.obj");
+	StargateModel = Model("Models/Stargate.obj"); //Stargate
+	waterPlaneStargateModel = Model("Models/waterPlaneStargate.obj");
 
-	Model JumperModel = Model("Models/Jumper.obj");
-	Jumper jumper1 = Jumper(&JumperModel);
+	JumperModel = Model("Models/Jumper.obj");
+	jumper1.setModel(&JumperModel);
 
-	Model PlanetModel = Model("Models/planet.obj");
+	PlanetModel = Model("Models/planet.obj");
 
-	Model AsteroidModel = Model("Models/rock.obj");
+	AsteroidModel = Model("Models/rock.obj");
 	createAsteroidVAO(asteroidAmount, AsteroidModel, planetPos); //no return value as there is one VAO per asteroid...
 
-	Model SunModel = Model("Models/Sun.obj");
+	SunModel = Model("Models/Sun.obj");
 
-	Model missileModel = Model("Models/missile.obj");
+	missileModel = Model("Models/missile.obj");
 
-	Model lightBulbCenterModel = Model("Models/lightBulbCenter.obj");
-	Model lightBulbGlassModel = Model("Models/lightBulbGlass.obj");
+	lightBulbCenterModel = Model("Models/lightBulbCenter.obj");
+	lightBulbGlassModel = Model("Models/lightBulbGlass.obj");
 
-	Model weirdCubeModel = Model("Models/weirdCube.obj");
+	weirdCubeModel = Model("Models/weirdCube.obj");
 
 
 	//particles
-	ParticleGenerator* Particles;
 	Particles = new ParticleGenerator(particleShader, 2000);
 
 
 	//lights
-	//pointer, pos, [color] OR [ambient, diffuse, specular,], [constant, linear, quadratic attenuation,] [spotlight direction, inner angle, outer angle,] size, VAO from other lights (0 if none already created)
+	//args = pointer, pos, [color] OR [ambient, diffuse, specular,], [constant, linear, quadratic attenuation,] [spotlight direction, inner angle, outer angle,] size, VAO from other lights (0 if none already created)
 	LightSource rotatingLight = LightSource(&lightCounter, POINTLIGHT, glm::vec3(5.0f, 2.0f, 10.0f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.0008f, 0.00002f, 0.5f, 0);
 	lightArray.push_back(&rotatingLight);
 	GLuint lightVAO = rotatingLight.getVAO();
@@ -320,6 +360,31 @@ int main(int argc, char* argv[]) {
 	lightArray.push_back(&waterStargateLight);
 
 	//to debug a light, comment the push back for the others and set lightCounter = 1;
+
+
+	//framebuffer configurations
+	unsigned int framebuffer;
+	glGenFramebuffers(1, &framebuffer);
+	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+	// create a color attachment texture
+	unsigned int textureColorbuffer;
+	glGenTextures(1, &textureColorbuffer);
+	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, windowWidth, windowHeight, 0, GL_RGB, GL_UNSIGNED_BYTE, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
+	// create a renderbuffer object for depth and stencil attachment (we won't be sampling these)
+	unsigned int rbo;
+	glGenRenderbuffers(1, &rbo);
+	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, windowWidth, windowHeight); // use a single renderbuffer object for both a depth AND stencil buffer.
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo); // now actually attach it
+	// now that we actually created the framebuffer and added all attachments we want to check if it is actually complete now
+	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << endl;
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 
 
 	//camera initial look at position
@@ -343,61 +408,11 @@ int main(int argc, char* argv[]) {
 
 
 		//Handle movements
-		jumper1.clearMovement();
-		if (!isExploded) { //removes the ability to move if exploded
-			if (translationMovement[0])
-				jumper1.ProcessKeyboard(FORWARD, deltaTime);
-			if (translationMovement[1])
-				jumper1.ProcessKeyboard(BACKWARD, deltaTime);
-			if (translationMovement[2])
-				jumper1.ProcessKeyboard(LEFT, deltaTime);
-			if (translationMovement[3])
-				jumper1.ProcessKeyboard(RIGHT, deltaTime);
-			if (translationMovement[4])
-				jumper1.ProcessKeyboard(UP, deltaTime);
-			if (translationMovement[5])
-				jumper1.ProcessKeyboard(DOWN, deltaTime);
-
-			if (rotationMovement[0])
-				jumper1.ProcessKeyboard(PITCH_UP, deltaTime);
-			if (rotationMovement[1])
-				jumper1.ProcessKeyboard(PITCH_DOWN, deltaTime);
-			if (rotationMovement[2])
-				jumper1.ProcessKeyboard(ROLL_LEFT, deltaTime);
-			if (rotationMovement[3])
-				jumper1.ProcessKeyboard(ROLL_RIGHT, deltaTime);
-			if (rotationMovement[4])
-				jumper1.ProcessKeyboard(YAW_LEFT, deltaTime);
-			if (rotationMovement[5])
-				jumper1.ProcessKeyboard(YAW_RIGHT, deltaTime);
-		}
-		if (cameraMovement[0])
-			camera.ProcessKeyboard(CAM_FORWARD, deltaTime);
-		if (cameraMovement[1])
-			camera.ProcessKeyboard(CAM_BACKWARD, deltaTime);
-		if (cameraMovement[2])
-			camera.ProcessKeyboard(CAM_LEFT, deltaTime);
-		if (cameraMovement[3])
-			camera.ProcessKeyboard(CAM_RIGHT, deltaTime);
-		if (cameraMovement[4])
-			camera.ProcessKeyboard(CAM_UP, deltaTime);
-		if (cameraMovement[5])
-			camera.ProcessKeyboard(CAM_DOWN, deltaTime);
-
-		if (SprintActivated) {
-			camera.MovementSpeed = FastCameraMovementSpeed;
-		}
-		else {
-			camera.MovementSpeed = baseCameraMovementSpeed;
-		}
-
-		//	camera.updatePositionFPSView(jumper1.Position + +glm::vec3(jumper1.Right * jumperFirstPersonOffset.x) + glm::vec3(jumper1.Up * jumperFirstPersonOffset.y) + glm::vec3(jumper1.Front * jumperFirstPersonOffset.z), - jumper1.Front);
+		movementHandler();
 
 		//Calculate coordinate systems every frame
-		modelMatrix = createModelMatrix();
 		viewMatrix = createViewMatrix();
 		projectionMatrix = createProjectionMatrix();
-		MVPMatrix = createMVPMatrix(modelMatrix, viewMatrix, projectionMatrix);
 
 		// Background Fill Color
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
@@ -406,320 +421,64 @@ int main(int argc, char* argv[]) {
 
 
 		//SKYBOX (could be drawn last to optimize performance by not rendering fragments that do not pass the depth test)
-		glDisable(GL_CULL_FACE); //needs to be turned off here since we are inside the cube
-		glDepthMask(GL_FALSE); // Remove depth writing
-		skyboxShader.use();
-		glm::mat4 skyboxViewMatrix = glm::mat4(glm::mat3(viewMatrix)); //remove translation component
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-		skyboxShader.setInteger("skybox", 0);
-		skyboxShader.setMatrix4("projection", projectionMatrix);
-		skyboxShader.setMatrix4("view", skyboxViewMatrix);
-		glBindVertexArray(skyboxVAO);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0); // draw your skybox
-		glBindVertexArray(0);
-		glDepthMask(GL_LESS); // Re enable depth writing
+		drawSkybox();
 
 		//Axis drawing
-		glBindVertexArray(AxisVAO);
-		axisShader.use();
-		axisShader.setMatrix4("MVP", MVPMatrix);
-		glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
-		glBindVertexArray(0);
+		drawAxis();
 	
-		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 		//stargate model drawing
-		stargateShader.use();
-		glActiveTexture(GL_TEXTURE15);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-		stargateShader.setInteger("skybox", 15);
-		stargateShader.setFloat("material.refractionRatio", 0.0f);
-		stargateShader.setInteger("material.reflection", 0);
-		jumperShader.setInteger("material.reflectionMap", 0);
-		stargateAngle -= 0.016f;
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = glm::translate(modelMatrix, stargatePos);
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(stargateAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-		stargateShader.setMatrix4("model", modelMatrix);
-		stargateShader.setMatrix4("view", viewMatrix);
-		stargateShader.setMatrix4("projection", projectionMatrix);
-		stargateShader.setVector3f("viewPos", camera.Position);
-		stargateShader.setFloat("material.shininess", 32.0f);
-		stargateShader.setFloat("explosionDistance", -1);
+		drawStargate();
 
-		stargateShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
-		
-		for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
-			(*lightArray[i]).setModelShaderLightParameters(stargateShader, i);
-		}
-		StargateModel.Draw(stargateShader);
-
-		waterPlaneStargateShader.use();
-		waterPlaneStargateShader.setMatrix4("model", modelMatrix);
-		waterPlaneStargateShader.setMatrix4("view", viewMatrix);
-		waterPlaneStargateShader.setMatrix4("projection", projectionMatrix);
-		waterPlaneStargateShader.setVector3f("stargatePos", stargatePos);
-		waterPlaneStargateShader.setFloat("time", glfwGetTime() / 5);
-		glm::vec3 dist = stargatePos - camera.Position;
-		float distance = sqrt(pow(dist.x, 2) + pow(dist.y, 2) + pow(dist.z, 2));
-		float angle = 2 * tan((1.0f) / distance);
-		waterPlaneStargateShader.setFloat("cameraFov", camera.Fov);
-		waterPlaneStargateShader.setFloat("angle", glm::degrees(angle));
-		waterPlaneStargateModel.Draw(waterPlaneStargateShader);		
-
-		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
-		sunShader.use();
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = glm::translate(modelMatrix, sunPos);
-		float scale = 60.0f;
-		modelMatrix = glm::scale(modelMatrix, glm::vec3(scale));
-		sunShader.setMatrix4("model", modelMatrix);
-		sunShader.setMatrix4("view", viewMatrix);
-		sunShader.setMatrix4("projection", projectionMatrix);
-		sunShader.setVector3f("sunPos", sunPos);
-		sunShader.setFloat("time", glfwGetTime()/10); //don't move too fast
-		sunShader.setFloat("random", ((sin(glfwGetTime()) + 1.0) / 6.0) + 0.4); //random between 0.40 and 0.73
-		dist = sunPos - camera.Position; //distance between sun center and camera
-		distance = sqrt(pow(dist.x, 2) + pow(dist.y, 2) + pow(dist.z, 2));
-		angle = 2 * tan((1.0f*scale)/ distance); //angle of the sun in the viewport = atan(radius (=1) * scale /dist)
-		sunShader.setFloat("cameraFov", camera.Fov);
-		sunShader.setFloat("angle", glm::degrees(angle)); //used for ratio between sun angle in viewport and camera Fov
-		SunModel.Draw(sunShader);
-
+		//draw Sun
+		drawSun();
 
 		//planet drawing
-		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
-		planetShader.use();
-		modelMatrix = glm::mat4(1.0f);
-		planetRotation += 0.12f;
-		if (planetRotation >= 360.0f){
-			planetRotation = 0.0f;
-		}
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(planetRotation), glm::vec3(0.1f, 1.0f, 0.2f));
-		modelMatrix[3] = glm::vec4(planetPos, 1.0f);
-		modelMatrix = glm::scale(modelMatrix, glm::vec3(8.0f, 8.0f, 8.0f));
-		planetShader.setMatrix4("model", modelMatrix);
-		planetShader.setMatrix4("view", viewMatrix);
-		planetShader.setMatrix4("projection", projectionMatrix);
-		planetShader.setVector3f("viewPos", camera.Position);
-		planetShader.setFloat("material.shininess", 16.0f);
-		glActiveTexture(GL_TEXTURE15);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-		planetShader.setInteger("skybox", 15);
-		planetShader.setFloat("material.refractionRatio", planetRefractionRatio);
-		planetShader.setInteger("material.reflection", planetReflection);
-		planetShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
-		for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
-			(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
-		}
-		PlanetModel.Draw(planetShader);
+		drawPlanet();
 		
 		// draw asteroides
-		asteroidShader.use();
-		asteroidShader.setMatrix4("view", viewMatrix);
-		asteroidShader.setMatrix4("projection", projectionMatrix);
-		asteroidShader.setInteger("texture_diffuse1", 0);
-		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, AsteroidModel.textures_loaded[0].id);
-		for (unsigned int i = 0; i < AsteroidModel.meshes.size(); i++)
-		{
-			glBindVertexArray(AsteroidModel.meshes[i].VAO);
-			glDrawElementsInstanced(GL_TRIANGLES, AsteroidModel.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, asteroidAmount);
-			glBindVertexArray(0);
-		}
+		drawAsteroids();
 
 		//particles update, must be rendered before missile and jumper otherwise will be rendered above
-		Particles->Update(dt, missilePosition, missileDirection, 8, -missileDirection * 4.8f); //rendered on missile position, with an offset to put it at the end, and velocity and its direction
-		particleShader.use();
-		particleShader.setMatrix4("view", viewMatrix);
-		particleShader.setMatrix4("projection", projectionMatrix);
-		Particles->Draw();
+		drawParticles();
 
 		// draw missile
-		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
-		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
-		glStencilMask(0xFF); // enable writing to the stencil buffer
-		missileShader.use();
-		missileShader.setMatrix4("view", viewMatrix);
-		missileShader.setMatrix4("projection", projectionMatrix);
-		missileShader.setMatrix4("model", createModelMissile(jumper1));
-		missileShader.setVector3f("viewPos", camera.Position);
-		missileShader.setFloat("material.shininess", 16.0f);
-		missileShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
-		for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
-			(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
-		}
+		drawMissile();
 
-		if (boolCaptureMissileSettings) { //need to store jumper direction and orientation for the missile to follow its path
-			//so i use a flag triggered by glfw keys
-			captureMissileSettings(jumper1);
-			boolCaptureMissileSettings = false;
-		}
-		if (missileLaunched && (glfwGetTime() - missileTimeCounter) > 10.0f) {
-			//after set time, missile is reset
-			missileLaunched = false;
-		}
-		missileModel.Draw(missileShader);
-
-		
 		//weirdCubes
-		glEnable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
-		weirdCubeShader.use();
-		weirdCubeShader.setMatrix4("view", viewMatrix);
-		weirdCubeShader.setMatrix4("projection", projectionMatrix);
-		weirdCubeShader.setVector3f("viewPos", camera.Position);
-		glActiveTexture(GL_TEXTURE12);
-		glBindTexture(GL_TEXTURE_2D, weirdCubeNormalMapTexture);
-		weirdCubeShader.setInteger("normalMap", 12);
-		weirdCubeShader.setFloat("material.shininess", 16.0f);
-		weirdCubeShader.setInteger("normalMapping", weirdCubeNormalMapping);
-		weirdCubeShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
-		for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
-			(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
-		}
-		glActiveTexture(GL_TEXTURE0);
-
-		weirdCubeAngle -= 0.25f;
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos(glfwGetTime() * 0.1f) * 20.0f, sin(glfwGetTime() * 0.1f) * 20.0f) + stargatePos);
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-		weirdCubeShader.setMatrix4("model", modelMatrix);
-		weirdCubeModel.Draw(weirdCubeShader);
-
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(60.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(60.0)) * 20.0f) + stargatePos);
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-		weirdCubeShader.setMatrix4("model", modelMatrix);
-		weirdCubeModel.Draw(weirdCubeShader);
-
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(120.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(120.0)) * 20.0f) + stargatePos);
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-		weirdCubeShader.setMatrix4("model", modelMatrix);
-		weirdCubeModel.Draw(weirdCubeShader);
-
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(180.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(180.0)) * 20.0f) + stargatePos);
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-		weirdCubeShader.setMatrix4("model", modelMatrix);
-		weirdCubeModel.Draw(weirdCubeShader);
-
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(240.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(240.0)) * 20.0f) + stargatePos);
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-		weirdCubeShader.setMatrix4("model", modelMatrix);
-		weirdCubeModel.Draw(weirdCubeShader);
-
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(300.0)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(300.0)) * 20.0f) + stargatePos);
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-		weirdCubeShader.setMatrix4("model", modelMatrix);
-		weirdCubeModel.Draw(weirdCubeShader);
-
-		//static one
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix[3] = glm::vec4(10.0f, 5.0f, 0.0f, 1.0f);
-		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
-		weirdCubeShader.setMatrix4("model", modelMatrix);
-		weirdCubeModel.Draw(weirdCubeShader);
-
-
+		drawWeirdCubes();
 		
 		//jumper model drawing
-		glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
-		glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
-		glStencilMask(0xFF); // enable writing to the stencil buffer
-		jumperShader.use();
-		glActiveTexture(GL_TEXTURE15);
-		glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
-		jumperShader.setInteger("skybox", 15);
-		glActiveTexture(GL_TEXTURE14);
-		glBindTexture(GL_TEXTURE_2D, jumperReflectionMap);
-		jumperShader.setInteger("material.texture_reflectionMap", 14);
-		if (isExploded) {
-			explosionDistance = sin(((glfwGetTime() - timeOfExplosion)*2 - 1) / 3.0f); //center the range and slow down the animation
-			if (explosionDistance > 0.99f) {
-				maxExplosionDistance = 1;
-			}
-			jumperShader.setFloat("explosionDistance", max(maxExplosionDistance, explosionDistance));
-		}
-		else {
-			jumperShader.setFloat("explosionDistance", -1);
-		}
-		jumperShader.setFloat("material.refractionRatio", 0.0f);
-		jumperShader.setInteger("material.reflectionMap", 1);
-		jumperShader.setInteger("material.reflection", 1);
-		jumperShader.setMatrix4("model", moveModel(jumper1, false));
-		jumperShader.setMatrix4("view", viewMatrix);
-		jumperShader.setMatrix4("projection", projectionMatrix);
-		jumperShader.setVector3f("viewPos", camera.Position);
-		jumperShader.setFloat("material.shininess", 32.0f);
-
-		jumperShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
-		for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
-			(*lightArray[i]).setModelShaderLightParameters(jumperShader, i);
-		}
-		JumperModel.Draw(jumperShader);
-		
+		drawJumper();
 
 		
 		//Stars drawing
-		glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
-		glBindVertexArray(starsVAO);
-		starsShader.use();
-		starsShader.setMatrix4("MVP", MVPMatrix);
-		glDrawArraysInstanced(GL_POINTS, 0, 1, starsCount); //uses instance drawing for the stars
-		glBindVertexArray(0);
+		drawStars();
 		
 		//light drawing
 
-		//draw light Bulb Center
-		glEnable(GL_CULL_FACE);
-		lightBulbCenterShader.use();
-		lightBulbCenterShader.setMatrix4("view", viewMatrix);
-		lightBulbCenterShader.setMatrix4("projection", projectionMatrix);
-		modelMatrix = glm::mat4(1.0f);
-		modelMatrix[3] = glm::vec4(rotatingLight.Position);
-		lightBulbCenterShader.setMatrix4("model", modelMatrix);
-		lightBulbCenterModel.Draw(lightBulbCenterShader);
+		//draw light Bulb (Center and glass with blending)
+		drawLightBulb(rotatingLight.Position);
 
-		//draw light Bulb Glass (blending)
-		glEnable(GL_CULL_FACE); //needs to be turned ON here otherwise the blending will mess up with the texture on the other side of the glass.
-		lightBulbGlassShader.use();
-		lightBulbGlassShader.setMatrix4("view", viewMatrix);
-		lightBulbGlassShader.setMatrix4("projection", projectionMatrix);
-		lightBulbGlassShader.setMatrix4("model", modelMatrix);
-		lightBulbGlassModel.Draw(lightBulbGlassShader);
 
-		modelMatrix = glm::mat4(1.0f);
+		//2nd render pass: outlining of the jumper
+		if (jumperOutlining) {
+			drawJumperOutlining();
+		}
+
+
+		//lights position update (and debug drawing)
 		lightShader.use();
 		flashLight.updateFlashLightDirection(camera.Front);
 		flashLight.updatePosition(camera.Position);
 		jumperFlashLight.updateFlashLightDirection(jumper1.Front);
 		jumperFlashLight.updatePosition(jumper1.Position + glm::vec3(jumper1.Right * flashlightJumperOffset.x) + glm::vec3(jumper1.Up * flashlightJumperOffset.y) + glm::vec3(jumper1.Front * flashlightJumperOffset.z));
-		//jumperFlashLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-		
+		//jumperFlashLight.draw(lightShader, glm::mat4(1.0f), viewMatrix, projectionMatrix, camera.Position);
+
 		rotatingLight.updatePosition(glm::vec3(sin(glfwGetTime() * 0.6f) * 10.0f, cos(glfwGetTime() * 0.3f) * 7.0f, sin(glfwGetTime()) * 8.0f));
-		//rotatingLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-		//sunLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
+		//rotatingLight.draw(lightShader, glm::mat4(1.0f), viewMatrix, projectionMatrix, camera.Position);
+		//sunLight.draw(lightShader, glm::mat4(1.0f), viewMatrix, projectionMatrix, camera.Position);
 		waterStargateLight.updatePosition(stargatePos);
-		//waterStargateLight.draw(lightShader, modelMatrix, viewMatrix, projectionMatrix, camera.Position);
-
-		
-		//2nd render pass: outlining of the jumper
-		if (jumperOutlining) {
-			glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //only the parts not equal to 1 (i.e. the model itself) will be drawn so we don't overwrite the model itself
-			glStencilMask(0x00); // disable writing to the stencil buffer
-			glDisable(GL_DEPTH_TEST); //outline is always drawn above everything
-			modelOutlining.use();
-			modelOutlining.setMatrix4("model", moveModel(jumper1, true));
-			modelOutlining.setMatrix4("view", viewMatrix);
-			modelOutlining.setMatrix4("projection", projectionMatrix);
-			JumperModel.Draw(modelOutlining);
-			glStencilMask(0xFF);
-			glEnable(GL_DEPTH_TEST);
-		}
-
+		//waterStargateLight.draw(lightShader, glm::mat4(1.0f), viewMatrix, projectionMatrix, camera.Position);
 
 		// Flip Buffers and Draw
 		glfwSwapBuffers(mWindow);
@@ -729,6 +488,10 @@ int main(int argc, char* argv[]) {
 	return EXIT_SUCCESS;
 }
 
+
+//////////////////////////////////////////
+////               VAO                 ///
+//////////////////////////////////////////
 GLuint createAxisVAO(void) {
 	GLfloat vertices[] = {
 		0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, //rigin red
@@ -765,10 +528,7 @@ GLuint createAxisVAO(void) {
 }
 
 
-//////////////////////////////////////////
-////          CUBEMAP SKYBOX           ///
-//////////////////////////////////////////
-
+//CUBEMAP SKYBOX 
 GLuint createCubeMapTexture(void) {
 	std::vector<std::string> textures = { "CubeMap/posx.png", "CubeMap/negx.png", "CubeMap/posy.png", "CubeMap/negy.png", "CubeMap/posz.png", "CubeMap/negz.png" }; // Must be 6 images
 	GLuint texture;
@@ -789,8 +549,6 @@ GLuint createCubeMapTexture(void) {
 	glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 	return texture;
 }
-
-
 
 GLuint createCubeMapVAO(void) {
 	GLfloat cube_vertices[] = {
@@ -843,7 +601,7 @@ GLuint createCubeMapVAO(void) {
 	return VAO;
 }
 
-GLuint createStarsVAO(int* starsCount, int maxStars) { //maxstars default to zero
+GLuint createStarsVAO(int* starsCount) {
 	ifstream positionFile;
 	string filename = "./CubeMap/StarsRandomCoords.txt";
 	positionFile.open(filename);
@@ -865,8 +623,6 @@ GLuint createStarsVAO(int* starsCount, int maxStars) { //maxstars default to zer
 		starsInfos[i].z = starPosZ;
 		starsInfos[i].w = starSize;
 		i++;
-		if ((i >= maxStars) && (maxStars != 0))
-			break; //allows to reduce the number of stars if impact on performance (shoud not because instancing !!)
 	}
 	*starsCount = i;
 	GLuint VBO, VAO, instanceVBO;
@@ -954,6 +710,32 @@ void createAsteroidVAO(int asteroidAmount, Model asteroidModel, glm::vec3 planet
 	}
 }
 
+GLuint createFramebufferQuadVAO() {
+	float quadVertices[] = { // vertex attributes for a quad that fills the entire screen in Normalized Device Coordinates.
+	// positions   // texCoords
+	-1.0f,  1.0f,  0.0f, 1.0f,
+	-1.0f, -1.0f,  0.0f, 0.0f,
+	 1.0f, -1.0f,  1.0f, 0.0f,
+
+	-1.0f,  1.0f,  0.0f, 1.0f,
+	 1.0f, -1.0f,  1.0f, 0.0f,
+	 1.0f,  1.0f,  1.0f, 1.0f
+	};
+
+	unsigned int quadVAO, quadVBO;
+	glGenVertexArrays(1, &quadVAO);
+	glGenBuffers(1, &quadVBO);
+	glBindVertexArray(quadVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, quadVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(quadVertices), &quadVertices, GL_STATIC_DRAW);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(1);
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
+
+	return quadVAO;
+}
+
 //////////////////////////////////////////
 ////        COORDINATE SYSTEMS         ///
 //////////////////////////////////////////
@@ -1022,10 +804,6 @@ glm::mat4 createModelMatrix(void) {
 	return Model;
 }
 
-glm::mat4 createMVPMatrix(glm::mat4 model, glm::mat4 view, glm::mat4 projection) {
-	glm::mat4 MVP = projection * view * model;
-	return MVP;
-}
 
 //////////////////////////////////////////
 ////           MISCELLANEOUS           ///
@@ -1257,7 +1035,344 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 }
 
 
-////////////DEBUGGING////////////////
+//////////////////////////////////////////
+////	  	  DRAWING FUNCTIONS        ///
+//////////////////////////////////////////
+void drawSkybox() {
+	glDisable(GL_CULL_FACE); //needs to be turned off here since we are inside the cube
+	glDepthMask(GL_FALSE); // Remove depth writing
+	skyboxShader.use();
+	glm::mat4 skyboxViewMatrix = glm::mat4(glm::mat3(viewMatrix)); //remove translation component
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+	skyboxShader.setInteger("skybox", 0);
+	skyboxShader.setMatrix4("projection", projectionMatrix);
+	skyboxShader.setMatrix4("view", skyboxViewMatrix);
+	glBindVertexArray(skyboxVAO);
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_SHORT, 0); // draw your skybox
+	glBindVertexArray(0);
+	glDepthMask(GL_LESS); // Re enable depth writing
+}
+
+void drawAxis() {
+	glBindVertexArray(AxisVAO);
+	axisShader.use();
+	axisShader.setMatrix4("model", glm::mat4(1.0f));
+	axisShader.setMatrix4("view", viewMatrix);
+	axisShader.setMatrix4("projection", projectionMatrix);
+	glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
+	glBindVertexArray(0);
+}
+void drawStargate() {
+	glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+	stargateShader.use();
+	glActiveTexture(GL_TEXTURE15);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+	stargateShader.setInteger("skybox", 15);
+	stargateShader.setFloat("material.refractionRatio", 0.0f);
+	stargateShader.setInteger("material.reflection", 0);
+	stargateShader.setInteger("material.reflectionMap", 0);
+	stargateAngle -= 0.016f;
+	modelMatrix = glm::mat4(1.0f);
+	modelMatrix = glm::translate(modelMatrix, stargatePos);
+	modelMatrix = glm::rotate(modelMatrix, glm::radians(stargateAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+	stargateShader.setMatrix4("model", modelMatrix);
+	stargateShader.setMatrix4("view", viewMatrix);
+	stargateShader.setMatrix4("projection", projectionMatrix);
+	stargateShader.setVector3f("viewPos", camera.Position);
+	stargateShader.setFloat("material.shininess", 32.0f);
+	stargateShader.setFloat("explosionDistance", -1);
+
+	stargateShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
+
+	for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
+		(*lightArray[i]).setModelShaderLightParameters(stargateShader, i);
+	}
+	StargateModel.Draw(stargateShader);
+
+	waterPlaneStargateShader.use();
+	waterPlaneStargateShader.setMatrix4("model", modelMatrix);
+	waterPlaneStargateShader.setMatrix4("view", viewMatrix);
+	waterPlaneStargateShader.setMatrix4("projection", projectionMatrix);
+	waterPlaneStargateShader.setVector3f("stargatePos", stargatePos);
+	waterPlaneStargateShader.setFloat("time", glfwGetTime() / 5);
+	distStargate = stargatePos - camera.Position;
+	distanceStargate = sqrt(pow(distStargate.x, 2) + pow(distStargate.y, 2) + pow(distStargate.z, 2));
+	angleStargateFOV = 2 * tan((1.0f) / distanceStargate);
+	waterPlaneStargateShader.setFloat("cameraFov", camera.Fov);
+	waterPlaneStargateShader.setFloat("angle", glm::degrees(angleStargateFOV));
+	waterPlaneStargateModel.Draw(waterPlaneStargateShader);
+}
+
+void drawSun() {
+	glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
+	sunShader.use();
+	modelMatrix = glm::mat4(1.0f);
+	modelMatrix = glm::translate(modelMatrix, sunPos);
+	float scale = 60.0f;
+	modelMatrix = glm::scale(modelMatrix, glm::vec3(scale));
+	sunShader.setMatrix4("model", modelMatrix);
+	sunShader.setMatrix4("view", viewMatrix);
+	sunShader.setMatrix4("projection", projectionMatrix);
+	sunShader.setVector3f("sunPos", sunPos);
+	sunShader.setFloat("time", glfwGetTime() / 10); //don't move too fast
+	sunShader.setFloat("random", ((sin(glfwGetTime()) + 1.0) / 6.0) + 0.4); //random between 0.40 and 0.73
+	distSun = sunPos - camera.Position; //distance between sun center and camera
+	distanceSun = sqrt(pow(distSun.x, 2) + pow(distSun.y, 2) + pow(distSun.z, 2));
+	angleSunFOV = 2 * tan((1.0f * scale) / distanceSun); //angle of the sun in the viewport = atan(radius (=1) * scale /dist)
+	sunShader.setFloat("cameraFov", camera.Fov);
+	sunShader.setFloat("angle", glm::degrees(angleSunFOV)); //used for ratio between sun angle in viewport and camera Fov
+	SunModel.Draw(sunShader);
+}
+
+void drawPlanet() {
+	glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
+	planetShader.use();
+	modelMatrix = glm::mat4(1.0f);
+	planetRotation += 0.12f;
+	if (planetRotation >= 360.0f) {
+		planetRotation = 0.0f;
+	}
+	modelMatrix = glm::rotate(modelMatrix, glm::radians(planetRotation), glm::vec3(0.1f, 1.0f, 0.2f));
+	modelMatrix[3] = glm::vec4(planetPos, 1.0f);
+	modelMatrix = glm::scale(modelMatrix, glm::vec3(8.0f, 8.0f, 8.0f));
+	planetShader.setMatrix4("model", modelMatrix);
+	planetShader.setMatrix4("view", viewMatrix);
+	planetShader.setMatrix4("projection", projectionMatrix);
+	planetShader.setVector3f("viewPos", camera.Position);
+	planetShader.setFloat("material.shininess", 16.0f);
+	glActiveTexture(GL_TEXTURE15);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+	planetShader.setInteger("skybox", 15);
+	planetShader.setFloat("material.refractionRatio", planetRefractionRatio);
+	planetShader.setInteger("material.reflection", planetReflection);
+	planetShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
+	for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
+		(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
+	}
+	PlanetModel.Draw(planetShader);
+}
+
+void drawAsteroids() {
+	asteroidShader.use();
+	asteroidShader.setMatrix4("view", viewMatrix);
+	asteroidShader.setMatrix4("projection", projectionMatrix);
+	asteroidShader.setInteger("texture_diffuse1", 0);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, AsteroidModel.textures_loaded[0].id);
+	for (unsigned int i = 0; i < AsteroidModel.meshes.size(); i++)
+	{
+		glBindVertexArray(AsteroidModel.meshes[i].VAO);
+		glDrawElementsInstanced(GL_TRIANGLES, AsteroidModel.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, asteroidAmount);
+		glBindVertexArray(0);
+	}
+}
+
+void drawParticles() {
+	Particles->Update(dt, missilePosition, missileDirection, 8, -missileDirection * 4.8f); //rendered on missile position, with an offset to put it at the end, and velocity and its direction
+	particleShader.use();
+	particleShader.setMatrix4("view", viewMatrix);
+	particleShader.setMatrix4("projection", projectionMatrix);
+	Particles->Draw();
+}
+
+void drawMissile() {
+	glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+	glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
+	glStencilMask(0xFF); // enable writing to the stencil buffer
+	missileShader.use();
+	missileShader.setMatrix4("view", viewMatrix);
+	missileShader.setMatrix4("projection", projectionMatrix);
+	missileShader.setMatrix4("model", createModelMissile(jumper1));
+	missileShader.setVector3f("viewPos", camera.Position);
+	missileShader.setFloat("material.shininess", 16.0f);
+	missileShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
+	for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
+		(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
+	}
+
+	if (boolCaptureMissileSettings) { //need to store jumper direction and orientation for the missile to follow its path
+		//so i use a flag triggered by glfw keys
+		captureMissileSettings(jumper1);
+		boolCaptureMissileSettings = false;
+	}
+	if (missileLaunched && (glfwGetTime() - missileTimeCounter) > 10.0f) {
+		//after set time, missile is reset
+		missileLaunched = false;
+	}
+	missileModel.Draw(missileShader);
+}
+
+void drawWeirdCubes() {
+	glEnable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+	weirdCubeShader.use();
+	weirdCubeShader.setMatrix4("view", viewMatrix);
+	weirdCubeShader.setMatrix4("projection", projectionMatrix);
+	weirdCubeShader.setVector3f("viewPos", camera.Position);
+	glActiveTexture(GL_TEXTURE12);
+	glBindTexture(GL_TEXTURE_2D, weirdCubeNormalMapTexture);
+	weirdCubeShader.setInteger("normalMap", 12);
+	weirdCubeShader.setFloat("material.shininess", 16.0f);
+	weirdCubeShader.setInteger("normalMapping", weirdCubeNormalMapping);
+	weirdCubeShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
+	for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
+		(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
+	}
+	glActiveTexture(GL_TEXTURE0);
+
+	weirdCubeAngle -= 0.25f;
+
+	for (int i = 0; i < 6; i++) {
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(60.0 * i)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(60.0 * i)) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		weirdCubeShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(weirdCubeShader);
+	}
+
+	//static one
+	modelMatrix = glm::mat4(1.0f);
+	modelMatrix[3] = glm::vec4(10.0f, 5.0f, 0.0f, 1.0f);
+	modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+	weirdCubeShader.setMatrix4("model", modelMatrix);
+	weirdCubeModel.Draw(weirdCubeShader);
+}
+
+void drawJumper() {
+	glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+	glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
+	glStencilMask(0xFF); // enable writing to the stencil buffer
+	jumperShader.use();
+	glActiveTexture(GL_TEXTURE15);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, skyboxTexture);
+	jumperShader.setInteger("skybox", 15);
+	glActiveTexture(GL_TEXTURE14);
+	glBindTexture(GL_TEXTURE_2D, jumperReflectionMap);
+	jumperShader.setInteger("material.texture_reflectionMap", 14);
+	if (isExploded) {
+		explosionDistance = sin(((glfwGetTime() - timeOfExplosion) * 2 - 1) / 3.0f); //center the range and slow down the animation
+		if (explosionDistance > 0.99f) {
+			maxExplosionDistance = 1;
+		}
+		jumperShader.setFloat("explosionDistance", max(maxExplosionDistance, explosionDistance));
+	}
+	else {
+		jumperShader.setFloat("explosionDistance", -1);
+	}
+	jumperShader.setFloat("material.refractionRatio", 0.0f);
+	jumperShader.setInteger("material.reflectionMap", 1);
+	jumperShader.setInteger("material.reflection", 1);
+	jumperShader.setMatrix4("model", moveModel(jumper1, false));
+	jumperShader.setMatrix4("view", viewMatrix);
+	jumperShader.setMatrix4("projection", projectionMatrix);
+	jumperShader.setVector3f("viewPos", camera.Position);
+	jumperShader.setFloat("material.shininess", 32.0f);
+
+	jumperShader.setInteger("lightCounter", lightCounter); //Sets the number of lights in the environment
+	for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
+		(*lightArray[i]).setModelShaderLightParameters(jumperShader, i);
+	}
+	JumperModel.Draw(jumperShader);
+}
+
+void drawStars() {
+	glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
+	glBindVertexArray(starsVAO);
+	starsShader.use();
+	starsShader.setMatrix4("model", glm::mat4(1.0f));
+	starsShader.setMatrix4("view", viewMatrix);
+	starsShader.setMatrix4("projection", projectionMatrix);
+	glDrawArraysInstanced(GL_POINTS, 0, 1, starsCount); //uses instance drawing for the stars
+	glBindVertexArray(0);
+}
+
+void drawLightBulb(glm::vec4 position) {
+	//draw light bulb center
+	glEnable(GL_CULL_FACE);
+	lightBulbCenterShader.use();
+	lightBulbCenterShader.setMatrix4("view", viewMatrix);
+	lightBulbCenterShader.setMatrix4("projection", projectionMatrix);
+	modelMatrix = glm::mat4(1.0f);
+	modelMatrix[3] = glm::vec4(position);
+	lightBulbCenterShader.setMatrix4("model", modelMatrix);
+	lightBulbCenterModel.Draw(lightBulbCenterShader);
+
+	//draw light Bulb Glass (blending)
+	glEnable(GL_CULL_FACE); //needs to be turned ON here otherwise the blending will mess up with the texture on the other side of the glass.
+	lightBulbGlassShader.use();
+	lightBulbGlassShader.setMatrix4("view", viewMatrix);
+	lightBulbGlassShader.setMatrix4("projection", projectionMatrix);
+	lightBulbGlassShader.setMatrix4("model", modelMatrix);
+	lightBulbGlassModel.Draw(lightBulbGlassShader);
+}
+
+void drawJumperOutlining() {
+	glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //only the parts not equal to 1 (i.e. the model itself) will be drawn so we don't overwrite the model itself
+	glStencilMask(0x00); // disable writing to the stencil buffer
+	glDisable(GL_DEPTH_TEST); //outline is always drawn above everything
+	modelOutliningShader.use();
+	modelOutliningShader.setMatrix4("model", moveModel(jumper1, true));
+	modelOutliningShader.setMatrix4("view", viewMatrix);
+	modelOutliningShader.setMatrix4("projection", projectionMatrix);
+	JumperModel.Draw(modelOutliningShader);
+	glStencilMask(0xFF);
+	glEnable(GL_DEPTH_TEST);
+}
+
+void movementHandler() {
+	jumper1.clearMovement();
+	if (!isExploded) { //removes the ability to move if exploded
+		if (translationMovement[0])
+			jumper1.ProcessKeyboard(FORWARD, deltaTime);
+		if (translationMovement[1])
+			jumper1.ProcessKeyboard(BACKWARD, deltaTime);
+		if (translationMovement[2])
+			jumper1.ProcessKeyboard(LEFT, deltaTime);
+		if (translationMovement[3])
+			jumper1.ProcessKeyboard(RIGHT, deltaTime);
+		if (translationMovement[4])
+			jumper1.ProcessKeyboard(UP, deltaTime);
+		if (translationMovement[5])
+			jumper1.ProcessKeyboard(DOWN, deltaTime);
+
+		if (rotationMovement[0])
+			jumper1.ProcessKeyboard(PITCH_UP, deltaTime);
+		if (rotationMovement[1])
+			jumper1.ProcessKeyboard(PITCH_DOWN, deltaTime);
+		if (rotationMovement[2])
+			jumper1.ProcessKeyboard(ROLL_LEFT, deltaTime);
+		if (rotationMovement[3])
+			jumper1.ProcessKeyboard(ROLL_RIGHT, deltaTime);
+		if (rotationMovement[4])
+			jumper1.ProcessKeyboard(YAW_LEFT, deltaTime);
+		if (rotationMovement[5])
+			jumper1.ProcessKeyboard(YAW_RIGHT, deltaTime);
+	}
+	if (cameraMovement[0])
+		camera.ProcessKeyboard(CAM_FORWARD, deltaTime);
+	if (cameraMovement[1])
+		camera.ProcessKeyboard(CAM_BACKWARD, deltaTime);
+	if (cameraMovement[2])
+		camera.ProcessKeyboard(CAM_LEFT, deltaTime);
+	if (cameraMovement[3])
+		camera.ProcessKeyboard(CAM_RIGHT, deltaTime);
+	if (cameraMovement[4])
+		camera.ProcessKeyboard(CAM_UP, deltaTime);
+	if (cameraMovement[5])
+		camera.ProcessKeyboard(CAM_DOWN, deltaTime);
+
+	if (SprintActivated) {
+		camera.MovementSpeed = FastCameraMovementSpeed;
+	}
+	else {
+		camera.MovementSpeed = baseCameraMovementSpeed;
+	}
+}
+
+
+//////////////////////////////////////////
+////			 DEBUGGING            ///
+//////////////////////////////////////////
 void printMatrix(glm::mat4 m) {
 	cout << m[0][0] << " " << m[0][1] << " " << m[0][2] << " " << m[0][3] << endl;
 	cout << m[1][0] << " " << m[1][1] << " " << m[1][2] << " " << m[1][3] << endl;

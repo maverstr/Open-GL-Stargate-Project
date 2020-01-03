@@ -36,6 +36,9 @@ public:
 		loadModel(path);
 	}
 
+	Model() {//default constructor for global variable
+	}
+
 	// draws the model, and thus all its meshes
 	void Draw(Shader shader)
 	{

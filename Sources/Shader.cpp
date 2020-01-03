@@ -13,6 +13,9 @@ Shader::Shader(const GLchar *vertexPath, const GLchar *fragmentPath, const GLcha
 	mTessEPath = tessEPath;
 }
 
+Shader::Shader() {//default constructor for global variable
+}
+
 Shader &Shader::use() {
 	glUseProgram(ID);
 	return *this;

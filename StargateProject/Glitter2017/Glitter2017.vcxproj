@@ -143,6 +143,8 @@
     <None Include="Shaders\asteroid.vert" />
     <None Include="Shaders\axis.frag" />
     <None Include="Shaders\axis.vert" />
+    <None Include="Shaders\framebuffer.frag" />
+    <None Include="Shaders\framebuffer.vert" />
     <None Include="Shaders\lightBulbCenter.frag" />
     <None Include="Shaders\lightBulbCenter.vert" />
     <None Include="Shaders\lightBulbGlass.frag" />
