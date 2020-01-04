@@ -25,7 +25,7 @@ The drawing is done using instances to increase performance !!!
 - normal mapping
 - framebuffer use to act as a secondary POV following the ship
 - use of kernel in the framebuffer for post-processing effects
-- shadows (soft) using depth cubemaps
+- sunlight soft shadows using depth cubemaps, working on all objects
 
 keybindings (azerty keyboard):
 Camera Movements:

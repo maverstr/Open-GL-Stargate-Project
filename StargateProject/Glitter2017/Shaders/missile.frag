@@ -55,7 +55,7 @@ vec3 gridSamplingDisk[20] = vec3[]
 );
 
 
-vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir, vec3 viewPos);
+vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir, vec3 viewPos, bool sunlight);
 float shadowCalculation(vec3 fragPos, vec3 lightPos, vec3 viewPos);
 
 void main()
@@ -67,14 +67,14 @@ void main()
 	vec3 result = vec3(0.0f, 0.0f, 0.0f); //default
     
 	for (int i = 0; i < min(NR_POINT_LIGHTS, lightCounter); i++){
-		result += calcFragFromALightSource(light[i], norm, fs_in.FragPos, viewDir, viewPos);    
+		result += calcFragFromALightSource(light[i], norm, fs_in.FragPos, viewDir, viewPos, i==3);    
     }
 
     FragColor = vec4(result, 1.0);
 }
 
 
-vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir, vec3 viewPos){
+vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir, vec3 viewPos, bool sunlight){
 //attenuation
 	float attenuation = 1; //default value
 	if(light.attenuationBool == 1){
@@ -115,7 +115,13 @@ vec3 calcFragFromALightSource(Light light, vec3 norm, vec3 FragPos, vec3 viewDir
 		}
 
 	//shadows
-	float shadow = shadowCalculation(fs_in.FragPos, vec3(light.position), viewPos); //equals 0 when frag not in shadow and 1 when in shadows, with soft shadows from PCF algo
+	float shadow = 0.0f;
+	if(sunlight){ //only for the sunlight
+		shadow = shadowCalculation(fs_in.FragPos, vec3(light.position), viewPos); //equals 0 when frag not in shadow and 1 when in shadows, with soft shadows from PCF algo
+	}
+	else{
+		shadow = 0.0f;
+	}
 	////////////////////////////RESULT////////////////////////////////////
 	vec3 result = (ambient*0.1f + (1.0f - shadow) * (diffuse *0.8f + specular*1.2f)) * attenuation;
 	return result;

@@ -384,6 +384,7 @@ int main(int argc, char* argv[]) {
 	LightSource jumperFlashLight = LightSource(&lightCounter, SPOTLIGHT, jumper1.Position + flashlightJumperOffset, glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), glm::vec3(0.9f, 0.95f, 0.4f), 1.0f, 0.0032f, 0.0008f, glm::vec3(0.0f,0.0f,1.0f), 8.5f, 12.5f, 0.2f, 0);
 	lightArray.push_back(&jumperFlashLight);
 	
+	//note: sunlight should always at index 4 in the list (used in shadows for ease)
 	LightSource sunLight = LightSource(&lightCounter, POINTLIGHT, sunPos, glm::vec3(1.0f, 0.6f, 0.2f)*1.0f, 1.0f, 0.00080f, 0.0000070f, 1.0f, lightVAO);
 	lightArray.push_back(&sunLight);
 
@@ -503,6 +504,13 @@ int main(int argc, char* argv[]) {
 			drawWeirdCubesShadow();
 			drawStargateShadow();
 			drawLightBulbShadow(rotatingLight.Position);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+
+		else { //if no shadows, just clean up the texture (otherwise the last shadows stay rendered)
+			glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+			glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+			glClear(GL_DEPTH_BUFFER_BIT);
 			glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		}
 
@@ -1422,7 +1430,6 @@ void drawPlanetShadow() {
 	glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 	shadowShader.use();
 	modelMatrix = glm::mat4(1.0f);
-	planetRotation += 0.12f;
 	if (planetRotation >= 360.0f) {
 		planetRotation = 0.0f;
 	}
@@ -1523,12 +1530,25 @@ void drawWeirdCubes() {
 		(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
 	}
 	glActiveTexture(GL_TEXTURE0);
+	weirdCubeShader.setFloat("far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	weirdCubeShader.setInteger("depthMap", 10);
 
+	//6 cubes in rotation around the stargate
 	weirdCubeAngle -= 0.25f;
-
 	for (int i = 0; i < 6; i++) {
 		modelMatrix = glm::mat4(1.0f);
 		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(60.0 * i)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(60.0 * i)) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		weirdCubeShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(weirdCubeShader);
+	}
+
+	//10 cubes in rotation around the planet
+	for (int i = 0; i < 10; i++) {
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(cos((glfwGetTime() * 0.1f) - glm::radians(36.0 * i)) * 60.0f, 0.0f , sin((glfwGetTime() * 0.1f) - glm::radians(36.0 * i)) * 60.0f) + planetPos);
 		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
 		weirdCubeShader.setMatrix4("model", modelMatrix);
 		weirdCubeModel.Draw(weirdCubeShader);
@@ -1545,10 +1565,18 @@ void drawWeirdCubes() {
 void drawWeirdCubesShadow() {
 	glEnable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 	shadowShader.use();
-	weirdCubeAngle -= 0.25f;
 	for (int i = 0; i < 6; i++) {
 		modelMatrix = glm::mat4(1.0f);
 		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(60.0 * i)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(60.0 * i)) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		shadowShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(shadowShader);
+	}
+
+	//10 cubes in rotation around the planet
+	for (int i = 0; i < 10; i++) {
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(cos((glfwGetTime() * 0.1f) - glm::radians(36.0 * i)) * 60.0f, 0.0f, sin((glfwGetTime() * 0.1f) - glm::radians(36.0 * i)) * 60.0f) + planetPos);
 		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
 		shadowShader.setMatrix4("model", modelMatrix);
 		weirdCubeModel.Draw(shadowShader);
