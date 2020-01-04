@@ -164,12 +164,6 @@ private:
 		this->Up = rotMat * this->Up;
 		this->Right = rotMat * this->Right;
 
-		/*
-		this->Front = glm::normalize(this->Front); // glm::normalize(front);
-		this->Up = glm::normalize(this->Up); // glm::normalize(up);
-		this->Right = glm::vec4(glm::normalize(glm::cross(glm::vec3(this->Front), glm::vec3(this->Up))),1.0f);
-		this->rotMatTotal = rotMatTotal;
-
 		/* build a coordinate system change matrix from */
 		this->rotMatTotal = glm::mat4(1.0f);
 		this->rotMatTotal[0] = this->Right;

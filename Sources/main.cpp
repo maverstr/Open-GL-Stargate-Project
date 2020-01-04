@@ -184,7 +184,7 @@ float distanceSun = 0.0f;
 float angleSunFOV = 0.0f;
 
 //asteroids
-unsigned int asteroidAmount = 10000; //best looking results are 10000
+unsigned int asteroidAmount = 10000; //best looking results are 10000 but cpu expensive even with instancing
 
 //weird cube
 int weirdCubeNormalMapping = 1;
@@ -465,7 +465,7 @@ int main(int argc, char* argv[]) {
 		movementHandler();
 
 
-		//the whole render process in .. steps:
+		//the whole render process in 5 steps:
 		//1)Render the scene from the sun point of view and create a depth cubemap
 		//2)render the scene in a framebuffer that writes color to a texture.(using camera2)
 		//3)the scene is rendered again (camera1) but this time in the default framebuffer and fills the entire screen.
@@ -552,36 +552,25 @@ int main(int argc, char* argv[]) {
 		//Calculate coordinate systems every frame
 		viewMatrix = createViewMatrix1();
 		projectionMatrix = createProjectionMatrix();
-		//skybox
 		drawSkybox();
-		//Axis drawing
 		drawAxis();
-		//stargate model drawing
 		drawStargate();
-		//draw Sun
 		drawSun();
-		//planet drawing
 		drawPlanet();
-		// draw asteroides
 		drawAsteroids();
-		//particles update, must be rendered before missile and jumper otherwise will be rendered above
-		drawParticles();
-		// draw missile
+		drawParticles();//particles update, must be rendered before missile and jumper otherwise will be rendered above
 		drawMissile();
-		//weirdCubes
 		drawWeirdCubes();
-		//jumper model drawing
 		drawJumper();
-		//Stars drawing
 		drawStars();
-		//draw light Bulb (Center and glass with blending)
-		drawLightBulb(rotatingLight.Position);
+		drawLightBulb(rotatingLight.Position);//draw light Bulb (Center and glass with blending)
+
 		//2nd render pass: outlining of the jumper
 		if (jumperOutlining) {
 			drawJumperOutlining();
 		}
 
-		if (followCameraPOV) {
+		if (followCameraPOV) { //toggles the second pov
 		glStencilFunc(GL_ALWAYS, 1, 0xFF);
 		framebufferShader.use();
 		framebufferShader.setInteger("grayscale", grayscale);
