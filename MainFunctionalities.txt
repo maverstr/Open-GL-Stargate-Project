@@ -1,31 +1,38 @@
-- Automatic stars procedural generation with python script, reading of the file in the c++ code and drawing of the stars with varying size far away in the sky. 
-The drawing is done using instances to increase performance !!!
-- Asteroid drawing using instancing as well
-- cubemap/skybox in space
-- Blinn-Phong's light algorithm (ambient, diffuse, specular)
-- use of emission maps for other light sources on the object itself (as well as diffuse and specular maps)
-- light attenuation with distance (makes sense as we are in space, very long distance but not highly realistic)
-- 3 different types of lightsources (point light, directional, spotlight/flashlight) with their own class
+Gameplay:
 - 6DOF camera with smooth controls, and "sprint"
-- Model and Mesh class modified for importantion of OBJ files and use of their base materials as well as multiple texture and other maps
-- use of face culling when relevant for a performance increase
-- reflection map (for metallic effect of the ship) using reflection mapping
-- outlining of the model using stencil buffer to allow to see it through other objects
-- background music
+- Control of the ship (pitch, yaw, roll and 6 translations).
+- Outlining of the ship using stencil buffer to allow to see it through other objects.
+- Launchable missile with 10 sec cooldown.
+- Background music.
 
-- sun shader, moving with time and lighting corona
-- water ripple shader in stargate, sum of 4 circular wave and a spiral, moving with time
-- explosion effect using the normals and geometry shader
-- launchable missile with cooldown
-- particle effects for the missile
+Environment:
+- cubemap/skybox in space.
+- Automatic stars procedural generation with python script, reading of the file in the c++ code and drawing of the stars with varying size far away in the sky.
+	 The rendering is done using instancing to increase performance.
+- Asteroid rendering using instancing as well.
+- Blinn-Phong's light algorithm (ambient, diffuse, specular) and emission lighting.
+- Use of emission maps for other light sources on the object itself (as well as diffuse and specular maps).
+- Environment mapping: Reflection and refraction, using both reflection map on the ship and can be toggled as a whole on the planet.
+- Light attenuation with distance (makes sense as we are in space: very long distance but not highly realistic).
+- 3 different types of lightsources (point light, directional, spotlight/flashlight) with their own class
+- Sunlight soft shadows using depth cubemaps, working on all objects
 
-- reflection and refraction for the planet can be toggled
-- very basic implementation of MSAA (anti-aliasing)
-- use of blending for transparency of a light bulb glass
-- normal mapping
-- framebuffer use to act as a secondary POV following the ship
-- use of kernel in the framebuffer for post-processing effects
-- sunlight soft shadows using depth cubemaps, working on all objects
+Objects:
+- Jumper (spaceship) which can be moved, outlined and exploded (explosion effect using the normals and geometry shader).
+- Stargate with its own shader for water ripple effect (sum of 4 circular wave and a spiral, moving with time))
+- Planet
+- Edison type lightbulb (Use of blending for transparency of a light bulb glass)
+- Sun with its own shader for corona effect.
+- "Weird" Cube with normal mapping.
+- Missile (not by me) with my own particle effects.
+- Asteroids (not by me).
+
+Others:
+- Use of a framebuffer to act as a secondary POV following the ship
+- Use of kernels in the framebuffer for toggable post-processing effects.
+- Use of face culling when relevant for a performance increase.
+- Very basic implementation of MSAA (anti-aliasing).
+
 
 keybindings (azerty keyboard):
 Camera Movements:
@@ -49,7 +56,7 @@ Jumper (ship):
 Technical Demo:
 	I - Toggle planet as a crystal (refraction only)
 	U - Toggle planet as chrome (reflection added to the output color)
-	N- toggle MSAA
+	N - toggle MSAA
 	V - toggle Normal Mapping on "weird cube"
 	J - toggle framebuffer second POV
 

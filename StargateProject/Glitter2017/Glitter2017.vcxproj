@@ -171,8 +171,6 @@
     <None Include="Shaders\stars.vert" />
     <None Include="Shaders\sun.frag" />
     <None Include="Shaders\sun.vert" />
-    <None Include="Shaders\triangle.frag" />
-    <None Include="Shaders\triangle.vert" />
     <None Include="Shaders\waterPlaneStargate.frag" />
     <None Include="Shaders\waterPlaneStargate.vert" />
     <None Include="Shaders\weirdCube.frag" />

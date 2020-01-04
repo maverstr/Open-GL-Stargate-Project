@@ -27,7 +27,7 @@ using namespace std;
 #include <irrklang/irrKlang.h>
 using namespace irrklang;
 ISoundEngine* SoundEngine = createIrrKlangDevice();
-bool musicBool = false;
+bool musicBool = true;
 
 
 

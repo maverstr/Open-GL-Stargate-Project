@@ -70,12 +70,6 @@
     <None Include="Shaders\skybox.vert">
       <Filter>Resource Files</Filter>
     </None>
-    <None Include="Shaders\triangle.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="Shaders\triangle.vert">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="Shaders\stars.frag">
       <Filter>Resource Files</Filter>
     </None>
