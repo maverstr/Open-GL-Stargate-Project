@@ -162,6 +162,9 @@
     <None Include="Shaders\particle.vert" />
     <None Include="Shaders\planet.frag" />
     <None Include="Shaders\planet.vert" />
+    <None Include="Shaders\shadowShader.frag" />
+    <None Include="Shaders\shadowShader.geom" />
+    <None Include="Shaders\shadowShader.vert" />
     <None Include="Shaders\skybox.frag" />
     <None Include="Shaders\skybox.vert" />
     <None Include="Shaders\stars.frag" />

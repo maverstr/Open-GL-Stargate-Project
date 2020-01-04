@@ -146,7 +146,6 @@ public:
 private:
 	void updateVectors()
 	{
-		// Calculate the new Front vector
 		glm::mat4 rotMat = glm::mat4(1.0f);
 		rotMat = glm::rotate(rotMat, glm::radians(this->deltaYaw), glm::vec3(this->Up));
 		this->Front = rotMat * this->Front;
@@ -165,6 +164,7 @@ private:
 		this->Up = rotMat * this->Up;
 		this->Right = rotMat * this->Right;
 
+		/*
 		this->Front = glm::normalize(this->Front); // glm::normalize(front);
 		this->Up = glm::normalize(this->Up); // glm::normalize(up);
 		this->Right = glm::vec4(glm::normalize(glm::cross(glm::vec3(this->Front), glm::vec3(this->Up))),1.0f);

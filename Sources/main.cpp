@@ -73,6 +73,14 @@ void drawStars();
 void drawLightBulb(glm::vec4 position);
 void drawJumperOutlining();
 
+void drawPlanetShadow();
+void drawAsteroidsShadow();
+void drawMissileShadow();
+void drawJumperShadow();
+void drawWeirdCubesShadow();
+void drawStargateShadow();
+void drawLightBulbShadow(glm::vec4 position);
+
 //movements
 void movementHandler();
 
@@ -176,7 +184,7 @@ float distanceSun = 0.0f;
 float angleSunFOV = 0.0f;
 
 //asteroids
-unsigned int asteroidAmount = 10000;
+unsigned int asteroidAmount = 10000; //best looking results are 10000
 
 //weird cube
 int weirdCubeNormalMapping = 1;
@@ -185,7 +193,7 @@ float weirdCubeAngle = 0.0f;
 //Shaders
 Shader axisShader, skyboxShader, stargateShader, waterPlaneStargateShader, jumperShader, modelOutliningShader, planetShader,
 sunShader, asteroidShader, starsShader, missileShader, lightShader, particleShader, lightBulbCenterShader, lightBulbGlassShader,
-weirdCubeShader, framebufferShader;
+weirdCubeShader, framebufferShader, shadowShader;
 
 //Textures
 GLuint skyboxTexture, jumperReflectionMap, sunTexture, weirdCubeNormalMapTexture;
@@ -204,8 +212,13 @@ ParticleGenerator* Particles;
 glm::mat4 modelMatrix = glm::mat4(0);
 glm::mat4 viewMatrix = glm::mat4(0);
 glm::mat4 projectionMatrix = glm::mat4(0);
-glm::mat4 MVPMatrix = glm::mat4(0);
 
+
+//shadows
+float near_plane = 1.0f;
+float far_plane = 600.0f;
+unsigned int depthCubemap;
+bool shadowBool = true;
 
 
 //////////////////////////////////////////
@@ -318,6 +331,9 @@ int main(int argc, char* argv[]) {
 	framebufferShader = Shader("Shaders/framebuffer.vert", "Shaders/framebuffer.frag");
 	framebufferShader.compile();
 
+	shadowShader = Shader("Shaders/shadowShader.vert", "Shaders/shadowShader.frag", "Shaders/shadowShader.geom");
+	shadowShader.compile();
+
 
 	//Textures
 	skyboxTexture = createCubeMapTexture();
@@ -376,8 +392,30 @@ int main(int argc, char* argv[]) {
 
 	//to debug a light, comment the push back for the others and set lightCounter = 1;
 
+	
+	//shadows: configure framebuffer object
+	const unsigned int SHADOW_WIDTH = 1024, SHADOW_HEIGHT = 1024;
+	unsigned int depthMapFBO;
+	glGenFramebuffers(1, &depthMapFBO);
+	//generating depth cubemap
+	glGenTextures(1, &depthCubemap);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	for (unsigned int i = 0; i < 6; ++i)
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_DEPTH_COMPONENT, SHADOW_WIDTH, SHADOW_HEIGHT, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	// attach depth texture as the framebuffer depth buffer
+	glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+	glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, depthCubemap, 0);
+	glDrawBuffer(GL_NONE); //no color so explicitely sets the color buffer to none
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	
 
-	//framebuffer configurations
+	//framebuffer configuration for second POV
 	unsigned int framebuffer;
 	glGenFramebuffers(1, &framebuffer);
 	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
@@ -425,11 +463,53 @@ int main(int argc, char* argv[]) {
 		//Handle movements
 		movementHandler();
 
+
 		//the whole render process in .. steps:
-		//1)render the scene in a framebuffer that writes color to a texture.(using camera2)
-		//2)the scene is rendered again (camera1) but this time in the default framebuffer and fills the entire screen.
-		//3)The first scene is then rendered on a quad set up in the upper right corner in NDC.
-		//4)An additional pass is required to draw the outline of the jumper by using the stencil buffer for the default framebuffer.
+		//1)Render the scene from the sun point of view and create a depth cubemap
+		//2)render the scene in a framebuffer that writes color to a texture.(using camera2)
+		//3)the scene is rendered again (camera1) but this time in the default framebuffer and fills the entire screen.
+		//4)The first scene is then rendered on a quad set up in the upper right corner in NDC.
+		//5)An additional pass is required to draw the outline of the jumper by using the stencil buffer for the default framebuffer.
+
+		if (shadowBool) {
+			//point shadow mapping: generate the projection matrix from a light and 6 view matrix for each face of the cubemap
+			//90degree FOV for each face of the cubemap
+			glm::mat4 shadowProj = glm::perspective(glm::radians(90.0f), (float)SHADOW_WIDTH / (float)SHADOW_HEIGHT, near_plane, far_plane);
+			std::vector<glm::mat4> shadowTransforms;
+			shadowTransforms.push_back(shadowProj * glm::lookAt(glm::vec3(sunLight.Position), glm::vec3(sunLight.Position) + glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+			shadowTransforms.push_back(shadowProj * glm::lookAt(glm::vec3(sunLight.Position), glm::vec3(sunLight.Position) + glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+			shadowTransforms.push_back(shadowProj * glm::lookAt(glm::vec3(sunLight.Position), glm::vec3(sunLight.Position) + glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)));
+			shadowTransforms.push_back(shadowProj * glm::lookAt(glm::vec3(sunLight.Position), glm::vec3(sunLight.Position) + glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)));
+			shadowTransforms.push_back(shadowProj * glm::lookAt(glm::vec3(sunLight.Position), glm::vec3(sunLight.Position) + glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+			shadowTransforms.push_back(shadowProj * glm::lookAt(glm::vec3(sunLight.Position), glm::vec3(sunLight.Position) + glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f)));
+
+
+			//render the scene to the depth cubemap
+			glEnable(GL_DEPTH_TEST);
+			glViewport(0, 0, SHADOW_WIDTH, SHADOW_HEIGHT);
+			glBindFramebuffer(GL_FRAMEBUFFER, depthMapFBO);
+			glClear(GL_DEPTH_BUFFER_BIT);
+			shadowShader.use();
+			for (unsigned int i = 0; i < 6; ++i) {
+				shadowShader.setMatrix4(("shadowMatrices[" + std::to_string(i) + "]").c_str(), shadowTransforms[i]);
+			}
+			shadowShader.setFloat("far_plane", far_plane);
+			shadowShader.setVector3f("lightPos", sunLight.Position);
+			//render the scene to get the depth cubemap
+			drawPlanetShadow();
+			drawAsteroidsShadow();
+			drawMissileShadow();
+			drawJumperShadow();
+			drawWeirdCubesShadow();
+			drawStargateShadow();
+			drawLightBulbShadow(rotatingLight.Position);
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+
+
+		
+
+		glViewport(0, 0, windowWidth, windowHeight);
 		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
 		glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
@@ -438,30 +518,18 @@ int main(int argc, char* argv[]) {
 		//Calculate coordinate systems every frame
 		viewMatrix = createViewMatrix2();
 		projectionMatrix = createProjectionMatrix();
-		//skybox
 		drawSkybox();
-		//Axis drawing
 		drawAxis();
-		//stargate model drawing
 		drawStargate();
-		//draw Sun
 		drawSun();
-		//planet drawing
 		drawPlanet();
-		// draw asteroides
 		drawAsteroids();
-		//particles update, must be rendered before missile and jumper otherwise will be rendered above
-		drawParticles();
-		// draw missile
+		drawParticles();//particles update, must be rendered before missile and jumper otherwise will be rendered above
 		drawMissile();
-		//weirdCubes
 		drawWeirdCubes();
-		//jumper model drawing
 		drawJumper();
-		//Stars drawing
 		drawStars();
-		//draw light Bulb (Center and glass with blending)
-		drawLightBulb(rotatingLight.Position);
+		drawLightBulb(rotatingLight.Position);		//draw light Bulb (Center and glass with blending)
 		if (jumperOutlining) {
 			drawJumperOutlining();
 		}
@@ -518,7 +586,7 @@ int main(int argc, char* argv[]) {
 		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
-
+		
 		//lights position update (and debug drawing)
 		lightShader.use();
 		flashLight.updateFlashLightDirection(camera.Front);
@@ -1096,6 +1164,11 @@ static void key_callback(GLFWwindow* window, int key, int /*scancode*/, int acti
 		}
 	}
 
+	//Shadow toggle
+	if (keys[GLFW_KEY_KP_8]) {
+		shadowBool = !shadowBool;
+	}
+
 	//Wireframe or point mode 
 	if (keys[GLFW_KEY_1] || keys[GLFW_KEY_KP_1])
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -1229,6 +1302,7 @@ void drawAxis() {
 	glDrawElements(GL_LINES, 12, GL_UNSIGNED_INT, 0);
 	glBindVertexArray(0);
 }
+
 void drawStargate() {
 	glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 	stargateShader.use();
@@ -1254,6 +1328,10 @@ void drawStargate() {
 	for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
 		(*lightArray[i]).setModelShaderLightParameters(stargateShader, i);
 	}
+	stargateShader.setFloat("far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	stargateShader.setInteger("depthMap", 10);
 	StargateModel.Draw(stargateShader);
 
 	waterPlaneStargateShader.use();
@@ -1267,7 +1345,24 @@ void drawStargate() {
 	angleStargateFOV = 2 * tan((1.0f) / distanceStargate);
 	waterPlaneStargateShader.setFloat("cameraFov", camera.Fov);
 	waterPlaneStargateShader.setFloat("angle", glm::degrees(angleStargateFOV));
+	waterPlaneStargateShader.setFloat("far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	waterPlaneStargateShader.setInteger("depthMap", 10);
 	waterPlaneStargateModel.Draw(waterPlaneStargateShader);
+}
+
+void drawStargateShadow() {
+	glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+	shadowShader.use();
+	stargateAngle -= 0.016f;
+	modelMatrix = glm::mat4(1.0f);
+	modelMatrix = glm::translate(modelMatrix, stargatePos);
+	modelMatrix = glm::rotate(modelMatrix, glm::radians(stargateAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+	shadowShader.setMatrix4("model", modelMatrix);
+	StargateModel.Draw(shadowShader);
+
+	waterPlaneStargateModel.Draw(shadowShader);
 }
 
 void drawSun() {
@@ -1316,16 +1411,48 @@ void drawPlanet() {
 	for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
 		(*lightArray[i]).setModelShaderLightParameters(planetShader, i);
 	}
+	planetShader.setFloat("far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	planetShader.setInteger("depthMap", 10);
 	PlanetModel.Draw(planetShader);
 }
 
+void drawPlanetShadow() {
+	glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
+	shadowShader.use();
+	modelMatrix = glm::mat4(1.0f);
+	planetRotation += 0.12f;
+	if (planetRotation >= 360.0f) {
+		planetRotation = 0.0f;
+	}
+	modelMatrix = glm::rotate(modelMatrix, glm::radians(planetRotation), glm::vec3(0.1f, 1.0f, 0.2f));
+	modelMatrix[3] = glm::vec4(planetPos, 1.0f);
+	modelMatrix = glm::scale(modelMatrix, glm::vec3(8.0f, 8.0f, 8.0f));
+	shadowShader.setMatrix4("model", modelMatrix);
+
+	PlanetModel.Draw(shadowShader);
+}
+
 void drawAsteroids() {
+	glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
 	asteroidShader.use();
 	asteroidShader.setMatrix4("view", viewMatrix);
 	asteroidShader.setMatrix4("projection", projectionMatrix);
 	asteroidShader.setInteger("texture_diffuse1", 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, AsteroidModel.textures_loaded[0].id);
+	for (unsigned int i = 0; i < AsteroidModel.meshes.size(); i++)
+	{
+		glBindVertexArray(AsteroidModel.meshes[i].VAO);
+		glDrawElementsInstanced(GL_TRIANGLES, AsteroidModel.meshes[i].indices.size(), GL_UNSIGNED_INT, 0, asteroidAmount);
+		glBindVertexArray(0);
+	}
+}
+
+void drawAsteroidsShadow() {
+	glEnable(GL_CULL_FACE); //we can use face culling from here to save performance
+	shadowShader.use();
 	for (unsigned int i = 0; i < AsteroidModel.meshes.size(); i++)
 	{
 		glBindVertexArray(AsteroidModel.meshes[i].VAO);
@@ -1366,7 +1493,18 @@ void drawMissile() {
 		//after set time, missile is reset
 		missileLaunched = false;
 	}
+	missileShader.setFloat("far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	missileShader.setInteger("depthMap", 10);
 	missileModel.Draw(missileShader);
+}
+
+void drawMissileShadow() {
+	glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+	shadowShader.use();
+	shadowShader.setMatrix4("model", createModelMissile(jumper1));
+	missileModel.Draw(shadowShader);
 }
 
 void drawWeirdCubes() {
@@ -1404,6 +1542,26 @@ void drawWeirdCubes() {
 	weirdCubeModel.Draw(weirdCubeShader);
 }
 
+void drawWeirdCubesShadow() {
+	glEnable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+	shadowShader.use();
+	weirdCubeAngle -= 0.25f;
+	for (int i = 0; i < 6; i++) {
+		modelMatrix = glm::mat4(1.0f);
+		modelMatrix = glm::translate(modelMatrix, glm::vec3(0.0f, cos((glfwGetTime() * 0.1f) - glm::radians(60.0 * i)) * 20.0f, sin((glfwGetTime() * 0.1f) - glm::radians(60.0 * i)) * 20.0f) + stargatePos);
+		modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+		shadowShader.setMatrix4("model", modelMatrix);
+		weirdCubeModel.Draw(shadowShader);
+	}
+
+	//static one
+	modelMatrix = glm::mat4(1.0f);
+	modelMatrix[3] = glm::vec4(10.0f, 5.0f, 0.0f, 1.0f);
+	modelMatrix = glm::rotate(modelMatrix, glm::radians(weirdCubeAngle), glm::vec3(1.0f, 0.0f, 0.0f));
+	shadowShader.setMatrix4("model", modelMatrix);
+	weirdCubeModel.Draw(shadowShader);
+}
+
 void drawJumper() {
 	glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
 	glStencilFunc(GL_ALWAYS, 1, 0xFF); // all fragments from this model should update the stencil buffer
@@ -1438,7 +1596,18 @@ void drawJumper() {
 	for (int i = 0; i < lightCounter; i++) { //sends the light info to the object shaders
 		(*lightArray[i]).setModelShaderLightParameters(jumperShader, i);
 	}
+	jumperShader.setFloat("far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	jumperShader.setInteger("depthMap", 10);
 	JumperModel.Draw(jumperShader);
+}
+
+void drawJumperShadow() {
+	glDisable(GL_CULL_FACE); //needs to be turned off here since Blender model with triangles not specifically in the correct direction
+	shadowShader.use();
+	shadowShader.setMatrix4("model", moveModel(jumper1, false));
+	JumperModel.Draw(shadowShader);
 }
 
 void drawStars() {
@@ -1461,6 +1630,10 @@ void drawLightBulb(glm::vec4 position) {
 	modelMatrix = glm::mat4(1.0f);
 	modelMatrix[3] = glm::vec4(position);
 	lightBulbCenterShader.setMatrix4("model", modelMatrix);
+	lightBulbCenterShader.setFloat("far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	lightBulbCenterShader.setInteger("depthMap", 10);
 	lightBulbCenterModel.Draw(lightBulbCenterShader);
 
 	//draw light Bulb Glass (blending)
@@ -1469,8 +1642,28 @@ void drawLightBulb(glm::vec4 position) {
 	lightBulbGlassShader.setMatrix4("view", viewMatrix);
 	lightBulbGlassShader.setMatrix4("projection", projectionMatrix);
 	lightBulbGlassShader.setMatrix4("model", modelMatrix);
+	lightBulbGlassShader.setFloat("far_plane", far_plane);
+	glActiveTexture(GL_TEXTURE10);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, depthCubemap);
+	lightBulbGlassShader.setInteger("depthMap", 10);
 	lightBulbGlassModel.Draw(lightBulbGlassShader);
 }
+
+void drawLightBulbShadow(glm::vec4 position) {
+	//draw light bulb center
+	glEnable(GL_CULL_FACE);
+	shadowShader.use();
+	modelMatrix = glm::mat4(1.0f);
+	modelMatrix[3] = glm::vec4(position);
+	shadowShader.setMatrix4("model", modelMatrix);
+	lightBulbCenterModel.Draw(shadowShader);
+
+	//draw light Bulb Glass (blending)
+	glEnable(GL_CULL_FACE); //needs to be turned ON here otherwise the blending will mess up with the texture on the other side of the glass.
+	shadowShader.use();
+	lightBulbGlassModel.Draw(shadowShader);
+}
+
 
 void drawJumperOutlining() {
 	glStencilFunc(GL_NOTEQUAL, 1, 0xFF); //only the parts not equal to 1 (i.e. the model itself) will be drawn so we don't overwrite the model itself
