@@ -27,7 +27,7 @@ using namespace std;
 #include <irrklang/irrKlang.h>
 using namespace irrklang;
 ISoundEngine* SoundEngine = createIrrKlangDevice();
-bool musicBool = true;
+bool musicBool = false;
 
 
 
@@ -98,9 +98,9 @@ glm::mat4 createModelMatrix(void);
 
 
  // WINDOW PARAMETERS 
-const int windowWidth = 1690;
-const int windowHeight = 1050;
-const char* windowTitle = "Stargate Project";
+float windowWidth = 1690.0; //default
+float windowHeight = 1050.0; //default
+const char* windowTitle = "Stargate Project - Maxime Verstraeten";
 bool MSAA = true; 
 
 //movements jumper
@@ -143,7 +143,7 @@ int lightCounter = 0;
 Jumper jumper1;
 glm::vec3 flashlightJumperOffset = glm::vec3(0.0f, -1.27f, 5.5f);
 glm::vec3 jumperFirstPersonOffset = glm::vec3(0.0f, 0.0f, 5.5f);
-bool jumperOutlining = true;
+bool jumperOutlining = false;
 float timeOfExplosion = 0.0f;
 float explosionDistance = 0;
 float maxExplosionDistance = -1;
@@ -229,7 +229,8 @@ int main(int argc, char* argv[]) {
 	ISound* music = SoundEngine->play2D("audio/MF-W-90.XM", true, false, true, ESM_AUTO_DETECT, true);
 	ISoundEffectControl* fx = music->getSoundEffectControl();
 	fx->enableWavesReverbSoundEffect(); //adds reverb effect
-	music->setIsPaused(true);
+	music->setIsPaused(false);
+	music->setVolume(0.1);
 
 	// Load GLFW and Create a Window
 	glfwInit();
@@ -239,7 +240,15 @@ int main(int argc, char* argv[]) {
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 	glfwWindowHint(GLFW_RESIZABLE, GL_FALSE);
 	glfwWindowHint(GLFW_SAMPLES, 4); //MSAA (hint GLFW for a multisample buffer with 4 samples instead of normal color buffer)
-	auto mWindow = glfwCreateWindow(windowWidth, windowHeight, windowTitle, nullptr, nullptr);
+	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+	glfwWindowHint(GLFW_RED_BITS, mode->redBits);
+	glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
+	glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
+	glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+	windowWidth = float(mode->width);
+	windowHeight = float(mode->height);
+	GLFWwindow* mWindow = glfwCreateWindow(windowWidth, windowHeight, windowTitle, glfwGetPrimaryMonitor(), NULL);
+	//GLFWwindow* mWindow = glfwCreateWindow(windowWidth, windowHeight, windowTitle, NULL, NULL); //uncomment this for windowed mode
 	// Check for Valid Context
 	if (mWindow == nullptr) {
 		fprintf(stderr, "Failed to Create OpenGL Context");
@@ -527,7 +536,7 @@ int main(int argc, char* argv[]) {
 		viewMatrix = createViewMatrix2();
 		projectionMatrix = createProjectionMatrix();
 		drawSkybox();
-		drawAxis();
+		//drawAxis();
 		drawStargate();
 		drawSun();
 		drawPlanet();
@@ -553,7 +562,7 @@ int main(int argc, char* argv[]) {
 		viewMatrix = createViewMatrix1();
 		projectionMatrix = createProjectionMatrix();
 		drawSkybox();
-		drawAxis();
+		//drawAxis();
 		drawStargate();
 		drawSun();
 		drawPlanet();
@@ -1337,6 +1346,7 @@ void drawStargate() {
 	waterPlaneStargateShader.setMatrix4("projection", projectionMatrix);
 	waterPlaneStargateShader.setVector3f("stargatePos", stargatePos);
 	waterPlaneStargateShader.setFloat("time", glfwGetTime() / 5);
+	waterPlaneStargateShader.setFloat("aspect", windowWidth/windowHeight);
 	distStargate = stargatePos - camera.Position;
 	distanceStargate = sqrt(pow(distStargate.x, 2) + pow(distStargate.y, 2) + pow(distStargate.z, 2));
 	angleStargateFOV = 2 * tan((1.0f) / distanceStargate);
@@ -1373,6 +1383,7 @@ void drawSun() {
 	sunShader.setMatrix4("view", viewMatrix);
 	sunShader.setMatrix4("projection", projectionMatrix);
 	sunShader.setVector3f("sunPos", sunPos);
+	sunShader.setFloat("aspect", windowWidth/windowHeight);
 	sunShader.setFloat("time", glfwGetTime() / 10); //don't move too fast
 	sunShader.setFloat("random", ((sin(glfwGetTime()) + 1.0) / 6.0) + 0.4); //random between 0.40 and 0.73
 	distSun = sunPos - camera.Position; //distance between sun center and camera

@@ -8,6 +8,8 @@ uniform float time;
 uniform float angle;
 uniform float cameraFov;
 uniform float random;
+uniform float aspect; 
+
 in vec3 FragPos;
 
 in vec2 TexCoords;
@@ -51,7 +53,7 @@ void main()
 	vec3 almostRed		= vec3(1.0f, 0.1f, 0.05f) * 0.00001;
 	vec3 orangeRed		= vec3( 0.8, 0.20, 0.1 );
 	float time = time;
-	float aspect	= 1690.0f/1050.0f;
+	float aspect	=  aspect;
 	vec2 uv			=  (viewportPixelCoord - sunPosViewportPixelCoord) *(cameraFov/angle) *1.15; //screen coordinates, need to correct for camera FOV
 	vec2 p 			=  uv;
 	p.x *= aspect;

@@ -5,6 +5,7 @@ uniform sampler2D texture_diffuse1;
 uniform float time;
 uniform float angle;
 uniform float cameraFov;
+uniform float aspect;
 
 in vec3 FragPos;
 in vec2 TexCoords;
@@ -58,7 +59,7 @@ void main()
 {
 //basically, the effect is the sum of 4 circular waves in the corners of the quad used as a double plane, and a spiral. Additional background light texture
 	float time = time;
-	float aspect	= 1690.0f/1050.0f;
+	float aspect	= aspect;
 	vec2 uv			=  (viewportPixelCoord - PosViewportPixelCoord) *(cameraFov/angle) *0.3; //screen coordinates, need to correct for camera FOV
 
 	//float waveHeight=0.2+height(uv, time); //base light amount
