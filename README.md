@@ -2,6 +2,9 @@
 Small experimentation with OpenGL on my free-time.
 Initially based on Glitter release and some code from learnopengl.com.
 
+Application launches in windowed full-screen and should be at your monitor resolution.
+Startup can take some time (more than a few tens of seconds on low-end specs) due to some high-poly models. Don't panic if screen stays black at startup, just take your time and enjoy the music :)
+
 Gameplay:
 - 6DOF camera with smooth controls, and "sprint"
 - Control of the ship (pitch, yaw, roll and 6 translations).
@@ -23,9 +26,9 @@ Environment:
 
 Objects:
 - Jumper (spaceship) which can be moved, outlined and exploded (explosion effect using the normals and geometry shader).
-- Stargate with its own shader for water ripple effect (sum of 4 circular wave and a spiral, moving with time))
-- Planet
-- Edison type lightbulb (Use of blending for transparency of a light bulb glass)
+- Stargate with its own shader for water ripple effect (sum of 4 circular wave and a spiral, moving with time)).
+- Planet.
+- Edison type lightbulb (Use of blending for transparency of a light bulb glass).
 - Sun with its own shader for corona effect.
 - "Weird" Cube with normal mapping.
 - Missile (not by me) with my own particle effects.
@@ -38,7 +41,7 @@ Others:
 - Very basic implementation of MSAA (anti-aliasing).
 
 
-keybindings (azerty keyboard):
+keybindings (AZERTY keyboard):
 Camera Movements:
 	ZQSD - move Camera
 	X, SPACE - move Camera vertically
@@ -77,6 +80,5 @@ Music:
 Miscellaneous:
 	1,2,3 - Wireframe modes
 	W - deactivate VSync and show FPS
-
 
 
