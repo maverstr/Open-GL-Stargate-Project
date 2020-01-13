@@ -1,5 +1,5 @@
 # Open-GL-Stargate-Project
-Small experimentation with OpenGL on my free-time.
+Small experimentation with OpenGL on my free-time for my course INFOH502 at Uni.
 Initially based on Glitter release and some code from learnopengl.com.
 
 Application launches in windowed full-screen and should be at your monitor resolution.
